@@ -39,10 +39,10 @@ class RPBParser:
                         len(self._data) >= self._msglen + 4:
                     self._eof = True
                     self._msg = self._data[4:self._msglen + 4]
-                    msg_code, = struct.unpack("B", self._msg[:1])
-                    if msg_code is messages.MSG_CODE_ERROR_RESP:
-                        raise Exception('Raik error')
-                    elif msg_code in messages.MESSAGE_CLASSES:
+                    self.msg_code, = struct.unpack("B", self._msg[:1])
+                    if self.msg_code is messages.MSG_CODE_ERROR_RESP:
+                        raise Exception('Raik error', self._msg)
+                    elif self.msg_code in messages.MESSAGE_CLASSES:
                         print('Normal message')
                     else:
                         raise Exception('Unknown message code')
@@ -75,6 +75,7 @@ class RiakConnection:
         print('+')
         response = self._read_response()
         print('self._request', response)
+        self._parser = RPBParser()
         return response
 
     async def _read_response(self):
@@ -93,10 +94,13 @@ class RiakConnection:
             if self._parser.at_eof():
                 break
             print('data:', data)
-        return self._parser._msg
+        return self._parser.msg_code
 
-    async def ping(self):
-        response = await self._request(messages.MSG_CODE_PING_REQ)
+    async def ping(self, error=False):
+        if error:
+            response = await self._request(messages.MSG_CODE_PING_RESP)
+        else:
+            response = await self._request(messages.MSG_CODE_PING_REQ)
         return response
 
 
@@ -105,7 +109,12 @@ if __name__ == '__main__':
 
     async def ping():
         conn = await create_connection(loop=loop)
+        print('=' * 80)
         val = await conn.ping()
         print(val)
+        print('=' * 80)
+        val = await conn.ping(error=True)
+        print(val)
+        print('=' * 80)
 
     loop.run_until_complete(ping())
