@@ -5,6 +5,7 @@ os.environ['PYTHONASYNCIODEBUG'] = '1'
 
 import asyncio
 import struct
+import riak_pb
 from riak_pb import messages
 
 
@@ -117,10 +118,10 @@ class RiakConnection:
     def _encode_message(self, msg_code, msg=None):
         if msg is None:
             return struct.pack("!iB", 1, msg_code)
-        # msgstr = msg.SerializeToString()
-        # slen = len(msgstr)
-        # hdr = struct.pack("!iB", 1 + slen, msg_code)
-        # return hdr + msgstr
+        msgstr = msg.SerializeToString()
+        slen = len(msgstr)
+        hdr = struct.pack("!iB", 1 + slen, msg_code)
+        return hdr + msgstr
 
     @classmethod
     def _decode_pbo(cls, message):
@@ -129,7 +130,7 @@ class RiakConnection:
             result[key.name] = value
         return result
 
-    def _request(self, msg_code, msg=None):
+    async def _request(self, msg_code, msg=None, expect=None):
         self._writer.write(self._encode_message(msg_code, msg))
 
         if self._parser:
@@ -139,8 +140,11 @@ class RiakConnection:
             tail = bytearray()
         self._parser = self.ParserClass(tail)
 
-        response = self._read_response()
-        return response
+        code, response = await self._read_response()
+
+        if expect is not None and code != expect:
+            raise Exception('Unexpected response code ({})'.format(code))
+        return code, response
 
     async def _read_response(self):
         while not self._reader.at_eof():
@@ -156,18 +160,39 @@ class RiakConnection:
             self._parser.feed_data(data)
             if self._parser.at_eof():
                 break
-        return self._parser.msg
+        return self._parser.msg_code, self._parser.msg
 
     async def ping(self, error=False):
         if error:
-            response = await self._request(messages.MSG_CODE_PING_RESP)
+            _, response = await self._request(messages.MSG_CODE_PING_RESP)
         else:
-            response = await self._request(messages.MSG_CODE_PING_REQ)
+            _, response = await self._request(
+                messages.MSG_CODE_PING_REQ, expect=messages.MSG_CODE_PING_RESP)
         return response
 
-    async def server_info(self):
-        res = await self._request(messages.MSG_CODE_GET_SERVER_INFO_REQ)
+    async def get_server_info(self):
+        _, res = await self._request(
+            messages.MSG_CODE_GET_SERVER_INFO_REQ,
+            expect=messages.MSG_CODE_GET_SERVER_INFO_RESP)
         return self._decode_pbo(res)
+
+    async def get_client_id(self):
+        _, res = await self._request(
+            messages.MSG_CODE_GET_CLIENT_ID_REQ,
+            expect=messages.MSG_CODE_GET_CLIENT_ID_RESP)
+        return self._decode_pbo(res)
+
+    async def set_client_id(self, client_id):
+        req = riak_pb.RpbSetClientIdReq()
+        req.client_id = client_id
+
+        code, res = await self._request(
+            messages.MSG_CODE_SET_CLIENT_ID_REQ, req,
+            expect=messages.MSG_CODE_SET_CLIENT_ID_RESP)
+        if code == messages.MSG_CODE_SET_CLIENT_ID_RESP:
+            return True
+        else:
+            return False
 
 
 if __name__ == '__main__':
@@ -177,7 +202,13 @@ if __name__ == '__main__':
         conn = await create_connection(loop=loop)
         await conn.ping()
         await conn.ping()
-        server_info = await conn.server_info()
+        server_info = await conn.get_server_info()
         print(server_info)
+        res = await conn.get_client_id()
+        print(res)
+        res = await conn.set_client_id(b'test')
+        print(res)
+        res = await conn.get_client_id()
+        print(res)
 
     loop.run_until_complete(test())
