@@ -12,7 +12,7 @@ from riak_pb import messages
 MAX_CHUNK_SIZE = 65536
 MAX_CHUNK_SIZE = 2
 
-logger = logging.getLogger('aioriak')
+logger = logging.getLogger('aioriak.transport')
 
 # Debug
 import sys
@@ -25,10 +25,10 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
 
-async def create_connection(host='localhost', port=8087, loop=None):
+async def create_transport(host='localhost', port=8087, loop=None):
     reader, writer = await asyncio.open_connection(
         host, port, loop=loop)
-    conn = RiakConnection(reader, writer, loop=loop)
+    conn = RiakPbcAsyncTransport(reader, writer, loop=loop)
     return conn
 
 
@@ -106,7 +106,7 @@ class RPBParser:
         return pbo
 
 
-class RiakConnection:
+class RiakPbcAsyncTransport:
     ParserClass = RPBParser
 
     def __init__(self, reader, writer, loop=None):
@@ -194,21 +194,41 @@ class RiakConnection:
         else:
             return False
 
+    async def get_bucket_type_props(self, bucket_type):
+        '''
+        Fetch bucket-type properties
+        :param bucket_type: A :class:`BucketType <aioriak.bucket.BucketType>`
+               instance
+        :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
+        '''
+        req = riak_pb.RpbGetBucketTypeReq()
+        req.type = bucket_type.name.encode()
 
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_GET_BUCKET_TYPE_REQ, req,
+            messages.MSG_CODE_GET_BUCKET_RESP)
+        return resp
 
-    async def test():
-        conn = await create_connection(loop=loop)
-        await conn.ping()
-        await conn.ping()
-        server_info = await conn.get_server_info()
-        print(server_info)
-        res = await conn.get_client_id()
-        print(res)
-        res = await conn.set_client_id(b'test')
-        print(res)
-        res = await conn.get_client_id()
-        print(res)
+    def _add_bucket_type(self, req, bucket_type):
+        if bucket_type and bucket_type != 'default':
+            req.type = bucket_type
 
-    loop.run_until_complete(test())
+    async def get_buckets(self, bucket_type=None):
+        req = riak_pb.RpbListBucketsReq()
+        if bucket_type:
+            self._add_bucket_type(req, bucket_type.name.encode())
+        code, res = await self._request(messages.MSG_CODE_LIST_BUCKETS_REQ,
+                                        req,
+                                        messages.MSG_CODE_LIST_BUCKETS_RESP)
+        return res.buckets
+
+    async def get(self, bucket, key, bucket_type=b'default'):
+        req = riak_pb.RpbGetReq()
+        req.bucket = bucket
+        req.key = key
+        self._add_bucket_type(req, bucket_type)
+        msg_code, resp = await self._request(messages.MSG_CODE_GET_REQ, req,
+                                             messages.MSG_CODE_GET_RESP)
+        if resp is not None:
+            # self._decode_contents(resp.content)
+            return str(resp.encoded_data)
