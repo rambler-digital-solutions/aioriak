@@ -65,6 +65,9 @@ class BucketType:
         self._client = client
         self.name = name
 
+    def __repr__(self):
+        return "<BucketType {0}>".format(self.name)
+
     def is_default(self):
         '''
         Whether this bucket type is the default type, or a user-defined type.
@@ -73,57 +76,57 @@ class BucketType:
         return self.name == 'default'
 
     async def get_property(self, key):
-        """
+        '''
         Retrieve a bucket-type property.
         :param key: The property to retrieve.
         :type key: string
         :rtype: mixed
-        """
+        '''
         return await self.get_properties()[key]
 
     async def set_property(self, key, value):
-        """
+        '''
         Set a bucket-type property.
         :param key: Property to set.
         :type key: string
         :param value: Property value.
         :type value: mixed
-        """
+        '''
         await self.set_properties({key: value})
 
     async def get_properties(self):
-        """
+        '''
         Retrieve a dict of all bucket-type properties.
         :rtype: dict
-        """
+        '''
         return await self._client.get_bucket_type_props(self)
 
     async def set_properties(self, props):
-        """
+        '''
         Set multiple bucket-type properties in one call.
         :param props: A dictionary of properties
         :type props: dict
-        """
+        '''
         await self._client.set_bucket_type_props(self, props)
 
     def bucket(self, name):
-        """
+        '''
         Gets a bucket that belongs to this bucket-type.
         :param name: the bucket name
         :type name: str
         :rtype: :class:`RiakBucket`
-        """
+        '''
         return self._client.bucket(name, self)
 
     async def get_buckets(self):
-        """
+        '''
         Get the list of buckets under this bucket-type as
         :class:`Bucket <aioriak.bucket.Bucket>` instances.
         .. warning:: Do not use this in production, as it requires
            traversing through all keys stored in a cluster.
         :rtype: list of :class:`Bucket <riak.bucket.Bucket>`
                 instances
-        """
+        '''
         return await self._client.get_buckets(bucket_type=self)
 
     '''def stream_buckets(self, timeout=None):

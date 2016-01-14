@@ -134,6 +134,17 @@ class RiakClient:
         """
         return await self._transport.get_bucket_type_props(bucket_type)
 
+    async def set_bucket_type_props(self, bucket_type, props):
+        """
+        set_bucket_type_props(bucket_type, props)
+        Sets properties for the given bucket-type.
+        :param bucket_type: the bucket-type whose properties will be set
+        :type bucket_type: BucketType
+        :param props: the properties to set
+        :type props: dict
+        """
+        return await self._transport.set_bucket_type_props(bucket_type, props)
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
@@ -150,6 +161,7 @@ if __name__ == '__main__':
         print(res)
         bucket_type = client.bucket_type('counter_map')
         print(await bucket_type.get_properties())
+        await bucket_type.set_property('n_val', 3)
         res = await client.get_bucket_type_props(bucket_type)
         print(res)
         print(await bucket_type.get_buckets())

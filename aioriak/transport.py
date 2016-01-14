@@ -7,6 +7,7 @@ import asyncio
 import struct
 import riak_pb
 from riak_pb import messages
+from riak.transports.pbc import codec
 
 
 MAX_CHUNK_SIZE = 65536
@@ -115,6 +116,34 @@ class RiakPbcAsyncTransport:
         self._reader = reader
         self._parser = None
 
+    def _encode_bucket_props(self, props, msg):
+        """
+        Encodes a dict of bucket properties into the protobuf message.
+        :param props: bucket properties
+        :type props: dict
+        :param msg: the protobuf message to fill
+        :type msg: riak_pb.RpbSetBucketReq
+        """
+        for prop in codec.NORMAL_PROPS:
+            if prop in props and props[prop] is not None:
+                setattr(msg.props, prop, props[prop])
+        for prop in codec.COMMIT_HOOK_PROPS:
+            if prop in props:
+                setattr(msg.props, 'has_' + prop, True)
+                self._encode_hooklist(props[prop], getattr(msg.props, prop))
+        for prop in codec.MODFUN_PROPS:
+            if prop in props and props[prop] is not None:
+                self._encode_modfun(props[prop], getattr(msg.props, prop))
+        for prop in codec.QUORUM_PROPS:
+            if prop in props and props[prop] not in (None, 'default'):
+                value = self._encode_quorum(props[prop])
+                if value is not None:
+                    setattr(msg.props, prop, value)
+        if 'repl' in props:
+            msg.props.repl = codec.REPL_TO_PY[props['repl']]
+
+        return msg
+
     def _encode_message(self, msg_code, msg=None):
         if msg is None:
             return struct.pack("!iB", 1, msg_code)
@@ -208,6 +237,23 @@ class RiakPbcAsyncTransport:
             messages.MSG_CODE_GET_BUCKET_TYPE_REQ, req,
             messages.MSG_CODE_GET_BUCKET_RESP)
         return resp
+
+    async def set_bucket_type_props(self, bucket_type, props):
+        '''
+        Set bucket-type properties
+        :param bucket_type: A :class:`BucketType <aioriak.bucket.BucketType>`
+               instance
+        :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
+        '''
+        req = riak_pb.RpbSetBucketTypeReq()
+        req.type = bucket_type.name.encode()
+
+        self._encode_bucket_props(props, req)
+
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_SET_BUCKET_TYPE_REQ, req,
+            messages.MSG_CODE_SET_BUCKET_RESP)
+        return True
 
     def _add_bucket_type(self, req, bucket_type):
         if bucket_type and bucket_type != 'default':
