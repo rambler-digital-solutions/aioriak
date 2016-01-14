@@ -37,6 +37,13 @@ class Bucket:
         self._decoders = {}
         self._resolver = None
 
+    async def get_keys(self):
+        """
+        Return all keys within the bucket.
+        :rtype: list of keys
+        """
+        return await self._client.get_keys(self)
+
     def __repr__(self):
         if self.bucket_type.is_default():
             return '<RiakBucket {}>'.format(self.name)

@@ -145,6 +145,18 @@ class RiakClient:
         """
         return await self._transport.set_bucket_type_props(bucket_type, props)
 
+    async def get_keys(self, bucket):
+        """
+        get_keys(bucket)
+        Lists all keys in a bucket.
+        .. warning:: Do not use this in production, as it requires
+           traversing through all keys stored in a cluster.
+        :param bucket: the bucket whose keys are fetched
+        :type bucket: Bucket
+        :rtype: list
+        """
+        return await self._transport.get_keys(bucket)
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
@@ -164,7 +176,9 @@ if __name__ == '__main__':
         await bucket_type.set_property('n_val', 3)
         res = await client.get_bucket_type_props(bucket_type)
         print(res)
-        print(await bucket_type.get_buckets())
+        bucket = (await bucket_type.get_buckets())[0]
+        print(bucket)
+        print(await bucket.get_keys())
 
         '''res = await conn.get(
             bucket_type=b'counter_map', bucket=b'counters',

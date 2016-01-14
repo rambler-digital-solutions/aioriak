@@ -256,17 +256,27 @@ class RiakPbcAsyncTransport:
         return True
 
     def _add_bucket_type(self, req, bucket_type):
-        if bucket_type and bucket_type != 'default':
-            req.type = bucket_type
+        if bucket_type and not bucket_type.is_default():
+            req.type = bucket_type.name.encode()
 
     async def get_buckets(self, bucket_type=None):
         req = riak_pb.RpbListBucketsReq()
         if bucket_type:
-            self._add_bucket_type(req, bucket_type.name.encode())
+            self._add_bucket_type(req, bucket_type)
         code, res = await self._request(messages.MSG_CODE_LIST_BUCKETS_REQ,
                                         req,
                                         messages.MSG_CODE_LIST_BUCKETS_RESP)
         return res.buckets
+
+    async def get_keys(self, bucket):
+        """
+        Lists all keys within a bucket.
+        """
+        req = riak_pb.RpbListKeysReq()
+        req.bucket = bucket.name.encode()
+        self._add_bucket_type(req, bucket.bucket_type)
+        code, res = await self._request(messages.MSG_CODE_LIST_KEYS_REQ, req)
+        return res
 
     async def get(self, bucket, key, bucket_type=b'default'):
         req = riak_pb.RpbGetReq()
