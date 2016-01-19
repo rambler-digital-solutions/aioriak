@@ -278,13 +278,20 @@ class RiakPbcAsyncTransport:
         code, res = await self._request(messages.MSG_CODE_LIST_KEYS_REQ, req)
         return res
 
-    async def get(self, bucket, key, bucket_type=b'default'):
+    async def get(self, robj):
+        '''
+        Serialize get request and deserialize response
+        '''
+        bucket = robj.bucket
+
         req = riak_pb.RpbGetReq()
-        req.bucket = bucket
-        req.key = key
-        self._add_bucket_type(req, bucket_type)
+        req.bucket = bucket.name.encode()
+        self._add_bucket_type(req, bucket.bucket_type)
+        req.key = robj.key.encode()
+
         msg_code, resp = await self._request(messages.MSG_CODE_GET_REQ, req,
                                              messages.MSG_CODE_GET_RESP)
         if resp is not None:
+            print(resp.content)
             # self._decode_contents(resp.content)
-            return str(resp.encoded_data)
+        return robj

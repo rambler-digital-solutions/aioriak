@@ -157,6 +157,19 @@ class RiakClient:
         """
         return await self._transport.get_keys(bucket)
 
+    async def get(self, robj):
+        '''
+        get(robj)
+        Fetches the contents of a Riak object.
+        :param robj: the object to fetch
+        :type robj: RiakObject
+        '''
+        if not isinstance(robj.key, str):
+            raise TypeError(
+                'key must be a string, instead got {0}'.format(repr(robj.key)))
+
+        return await self._transport.get(robj)
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
@@ -176,9 +189,14 @@ if __name__ == '__main__':
         await bucket_type.set_property('n_val', 3)
         res = await client.get_bucket_type_props(bucket_type)
         print(res)
-        bucket = (await bucket_type.get_buckets())[0]
+        '''bucket = (await bucket_type.get_buckets())[0]
         print(bucket)
-        print(await bucket.get_keys())
+        keys = await bucket.get_keys()
+        print(keys)
+        res = await client.get_client_id()'''
+        obj = await bucket_type.bucket('counters').get(
+            '2016-01-02-5e43e39ff4d644fbbc805f2370660276-lenta')
+        print(obj)
 
         '''res = await conn.get(
             bucket_type=b'counter_map', bucket=b'counters',

@@ -44,6 +44,20 @@ class Bucket:
         """
         return await self._client.get_keys(self)
 
+    async def get(self, key):
+        '''
+        Retrieve an :class:`~aioriak.riak_object.RiakObject` or
+        :class:`~aioriak.datatypes.Datatype`, based on the presence and value
+        of the :attr:`datatype <BucketType.datatype>` bucket property.
+        :param key: Name of the key.
+        :type key: string
+        :rtype: :class:`RiakObject <aioriak.riak_object.RiakObject>` or
+           :class:`~aioriak.datatypes.Datatype`
+        '''
+        from riak_object import RiakObject
+        obj = RiakObject(self._client, self, key)
+        return await obj.reload()
+
     def __repr__(self):
         if self.bucket_type.is_default():
             return '<RiakBucket {}>'.format(self.name)
