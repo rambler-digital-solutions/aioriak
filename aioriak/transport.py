@@ -11,7 +11,7 @@ from riak.transports.pbc import codec
 
 
 MAX_CHUNK_SIZE = 65536
-MAX_CHUNK_SIZE = 2
+MAX_CHUNK_SIZE = 1024
 
 logger = logging.getLogger('aioriak.transport')
 
@@ -33,12 +33,25 @@ async def create_transport(host='localhost', port=8087, loop=None):
     return conn
 
 
+class AsyncPBStream:
+    '''
+    Used internally by RiakPbcAsyncTransport to implement streaming
+    operations. Implements the async iterator interface.
+    '''
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        raise StopIteration
+
+
 class RPBParser:
     """ Riak protobuf packet parser."""
     HEADER_LENGTH = 4
 
     def __init__(self, *args):
-        self._data = bytearray(*args)
+        self._initial_data = bytearray(*args)
+        self._data = bytearray()
         self._writer = self._feed_data()
         self._header_parsed = False
         self._exception = None
@@ -47,6 +60,8 @@ class RPBParser:
         self._tail = bytearray()
         self._msg = bytearray()
         next(self._writer)
+        if self._initial_data:
+            self.feed_data(self._initial_data)
 
     @property
     def tail(self):
@@ -55,46 +70,68 @@ class RPBParser:
     def at_eof(self):
         return self._eof
 
+    def _parse_header(self):
+        if len(self._data) >= self.HEADER_LENGTH:
+            self._msglen, = struct.unpack(
+                '!i', self._data[:self.HEADER_LENGTH])
+            if self._msglen > 8192:
+                raise Exception('Wrong MESSAGE_LEN %d', self._msglen)
+            self._header_parsed = True
+        else:
+            self._header_parsed = False
+        return self._header_parsed
+
+    def _check_eof(self):
+        if not self._header_parsed:
+            self._parse_header()
+        if self._header_parsed and \
+                len(self._data) >= self.HEADER_LENGTH + self._msglen:
+            self._eof = True
+            self._parse_msg()
+            self._grow_tail()
+
+    def _grow_tail(self):
+        if len(self._data) > self._msglen + self.HEADER_LENGTH:
+            self._tail = self._data[
+                self.HEADER_LENGTH + self._msglen:]
+        else:
+            self._tail = bytearray()
+
+    def _parse_msg(self):
+        self._msg = self._data[
+            self.HEADER_LENGTH:self.HEADER_LENGTH + self._msglen]
+        self.msg_code, = struct.unpack("B", self._msg[:1])
+        if self.msg_code is messages.MSG_CODE_ERROR_RESP:
+            logger.error('Riak error message reciever')
+            raise Exception('Raik error', self._msg)
+        elif self.msg_code in messages.MESSAGE_CLASSES:
+            logger.debug('Normal message with code %d received', self.msg_code)
+            self.msg = self._get_pb_msg(self.msg_code, self._msg[1:])
+        else:
+            logger.error('Unknown message received [%d]', self.msg_code)
+
     def _feed_data(self):
         while True:
             chunk = yield
             if chunk:
                 self._data.extend(chunk)
-                if not self._header_parsed and \
-                        len(self._data) >= self.HEADER_LENGTH:
-                    self._msglen, = struct.unpack(
-                        '!i', self._data[:self.HEADER_LENGTH])
-                    self._header_parsed = True
-                if self._header_parsed and \
-                        len(self._data) >= self._msglen + self.HEADER_LENGTH:
-                    self._eof = True
-                    self._msg = self._data[
-                        self.HEADER_LENGTH:self._msglen + self.HEADER_LENGTH]
-                    self.msg_code, = struct.unpack("B", self._msg[:1])
-                    if self.msg_code is messages.MSG_CODE_ERROR_RESP:
-                        logger.error('Riak error message reciever')
-                        raise Exception('Raik error', self._msg)
-                    elif self.msg_code in messages.MESSAGE_CLASSES:
-                        logger.debug('Normal message with code %d received',
-                                     self.msg_code)
-                        self.msg = self._parse_msg(self.msg_code,
-                                                   self._msg[1:])
-                    else:
-                        logger.error('Unknown message received')
-
-                    # tail is growing
-                    if len(self._data) > self._msglen + self.HEADER_LENGTH:
-                        self._tail = self._data[
-                            self.HEADER_LENGTH + self._msglen]
-
+                if self._check_eof():
+                    return
             if self._exception:
                 raise self._exception
 
     def feed_data(self, data):
         if not self._exception:
-            self._writer.send(data)
+            try:
+                if not self.at_eof():
+                    self._writer.send(data)
+                else:
+                    return False
+                return True
+            except StopIteration:
+                return False
 
-    def _parse_msg(self, code, msg):
+    def _get_pb_msg(self, code, msg):
         try:
             pbclass = messages.MESSAGE_CLASSES[code]
         except KeyError:
@@ -103,7 +140,14 @@ class RPBParser:
         if pbclass is None:
             return None
         pbo = pbclass()
-        pbo.ParseFromString(bytes(msg))
+        try:
+            pbo.ParseFromString(bytes(msg))
+        except Exception as e:
+            print('parsing error', self._msglen, len(msg))
+            print('parsed msg:', msg)
+            print('parsed header', self._data[:self.HEADER_LENGTH])
+            print('data', self._data)
+            raise e
         return pbo
 
 
@@ -170,6 +214,11 @@ class RiakPbcAsyncTransport:
         self._parser = self.ParserClass(tail)
 
         code, response = await self._read_response()
+        while not response.done:
+            tail = self._parser.tail
+            del self._parser
+            self._parser = self.ParserClass(tail)
+            code, response = await self._read_response()
 
         if expect is not None and code != expect:
             raise Exception('Unexpected response code ({})'.format(code))
