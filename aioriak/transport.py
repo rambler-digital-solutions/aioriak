@@ -8,6 +8,8 @@ import struct
 import riak_pb
 from riak_pb import messages
 from riak.transports.pbc import codec
+from riak.content import RiakContent
+from riak.util import decode_index_value
 
 
 MAX_CHUNK_SIZE = 65536
@@ -43,105 +45,6 @@ class AsyncPBStream:
 
     async def __anext__(self):
         raise StopIteration
-
-
-class RPBParser:
-    """ Riak protobuf packet parser."""
-    HEADER_LENGTH = 4
-
-    def __init__(self, *args):
-        self._initial_data = bytearray(*args)
-        self._data = bytearray()
-        self._writer = self._feed_data()
-        self._header_parsed = False
-        self._exception = None
-        self._eof = False
-        self._msglen = 0
-        self._tail = bytearray()
-        self._msg = bytearray()
-        next(self._writer)
-        if self._initial_data:
-            self.feed_data(self._initial_data)
-
-    @property
-    def tail(self):
-        return self._tail
-
-    def at_eof(self):
-        return self._eof
-
-    def _parse_header(self):
-        if len(self._data) >= self.HEADER_LENGTH:
-            self._msglen, = struct.unpack(
-                '!i', self._data[:self.HEADER_LENGTH])
-            if self._msglen > 8192:
-                raise Exception('Wrong MESSAGE_LEN %d', self._msglen)
-            self._header_parsed = True
-        else:
-            self._header_parsed = False
-        return self._header_parsed
-
-    def _check_eof(self):
-        if not self._header_parsed:
-            self._parse_header()
-        if self._header_parsed and \
-                len(self._data) >= self.HEADER_LENGTH + self._msglen:
-            self._eof = True
-            self._parse_msg()
-            self._grow_tail()
-
-    def _grow_tail(self):
-        if len(self._data) > self._msglen + self.HEADER_LENGTH:
-            self._tail = self._data[
-                self.HEADER_LENGTH + self._msglen:]
-        else:
-            self._tail = bytearray()
-
-    def _parse_msg(self):
-        self._msg = self._data[
-            self.HEADER_LENGTH:self.HEADER_LENGTH + self._msglen]
-        self.msg_code, = struct.unpack("B", self._msg[:1])
-        if self.msg_code is messages.MSG_CODE_ERROR_RESP:
-            logger.error('Riak error message reciever')
-            raise Exception('Raik error', self._msg)
-        elif self.msg_code in messages.MESSAGE_CLASSES:
-            logger.debug('Normal message with code %d received', self.msg_code)
-            self.msg = self._get_pb_msg(self.msg_code, self._msg[1:])
-        else:
-            logger.error('Unknown message received [%d]', self.msg_code)
-
-    def _feed_data(self):
-        while True:
-            chunk = yield
-            if chunk:
-                self._data.extend(chunk)
-                if self._check_eof():
-                    return
-            if self._exception:
-                raise self._exception
-
-    def feed_data(self, data):
-        if not self._exception:
-            try:
-                if not self.at_eof():
-                    self._writer.send(data)
-                else:
-                    return False
-                return True
-            except StopIteration:
-                return False
-
-    def _get_pb_msg(self, code, msg):
-        try:
-            pbclass = messages.MESSAGE_CLASSES[code]
-        except KeyError:
-            pbclass = None
-
-        if pbclass is None:
-            return None
-        pbo = pbclass()
-        pbo.ParseFromString(bytes(msg))
-        return pbo
 
 
 class RPBPacketParser:
@@ -409,6 +312,22 @@ class RiakPbcAsyncTransport:
             messages.MSG_CODE_GET_BUCKET_RESP)
         return resp
 
+    async def fetch_datatype(self, bucket, key):
+
+        if bucket.bucket_type.is_default():
+            raise NotImplementedError("Datatypes cannot be used in the default"
+                                      " bucket-type.")
+        req = riak_pb.DtFetchReq()
+        req.type = bucket.bucket_type.name.encode()
+        req.bucket = bucket.name.encode()
+        req.key = key.encode()
+
+        msg_code, resp = await self._request(messages.MSG_CODE_DT_FETCH_REQ,
+                                             req,
+                                             messages.MSG_CODE_DT_FETCH_RESP)
+
+        return self._decode_dt_fetch(resp)
+
     async def set_bucket_type_props(self, bucket_type, props):
         '''
         Set bucket-type properties
@@ -450,8 +369,90 @@ class RiakPbcAsyncTransport:
         for code, res in await self._stream(messages.MSG_CODE_LIST_KEYS_REQ,
                                             req,
                                             messages.MSG_CODE_LIST_KEYS_RESP):
-            keys += res.keys
+            for key in res.keys:
+                keys.append(key.decode())
         return keys
+
+    def _decode_contents(self, contents, obj):
+        """
+        Decodes the list of siblings from the protobuf representation
+        into the object.
+        :param contents: a list of RpbContent messages
+        :type contents: list
+        :param obj: a RiakObject
+        :type obj: RiakObject
+        :rtype RiakObject
+        """
+        obj.siblings = [self._decode_content(c, RiakContent(obj))
+                        for c in contents]
+        # Invoke sibling-resolution logic
+        if len(obj.siblings) > 1 and obj.resolver is not None:
+            obj.resolver(obj)
+        return obj
+
+    def _decode_content(self, rpb_content, sibling):
+        """
+        Decodes a single sibling from the protobuf representation into
+        a RiakObject.
+        :param rpb_content: a single RpbContent message
+        :type rpb_content: riak_pb.RpbContent
+        :param sibling: a RiakContent sibling container
+        :type sibling: RiakContent
+        :rtype: RiakContent
+        """
+
+        if rpb_content.HasField("deleted") and rpb_content.deleted:
+            sibling.exists = False
+        else:
+            sibling.exists = True
+        if rpb_content.HasField("content_type"):
+            sibling.content_type = rpb_content.content_type.decode()
+        if rpb_content.HasField("charset"):
+            sibling.charset = rpb_content.charset.decode()
+        if rpb_content.HasField("content_encoding"):
+            sibling.content_encoding = rpb_content.content_encoding.decode()
+        if rpb_content.HasField("vtag"):
+            sibling.etag = rpb_content.vtag.decode()
+
+        sibling.links = [self._decode_link(link)
+                         for link in rpb_content.links]
+        if rpb_content.HasField("last_mod"):
+            sibling.last_modified = float(rpb_content.last_mod)
+            if rpb_content.HasField("last_mod_usecs"):
+                sibling.last_modified += rpb_content.last_mod_usecs / 1000000.0
+
+        sibling.usermeta = dict([(usermd.key, usermd.value)
+                                 for usermd in rpb_content.usermeta])
+        sibling.indexes = set([(index.key,
+                                decode_index_value(index.key, index.value))
+                               for index in rpb_content.indexes])
+
+        sibling.encoded_data = rpb_content.value
+
+        return sibling
+
+    def _decode_link(self, link):
+        """
+        Decodes an RpbLink message into a tuple
+        :param link: an RpbLink message
+        :type link: riak_pb.RpbLink
+        :rtype tuple
+        """
+
+        if link.HasField("bucket"):
+            bucket = link.bucket
+        else:
+            bucket = None
+        if link.HasField("key"):
+            key = link.key
+        else:
+            key = None
+        if link.HasField("tag"):
+            tag = link.tag
+        else:
+            tag = None
+
+        return (bucket, key, tag)
 
     async def get(self, robj):
         '''
@@ -467,6 +468,13 @@ class RiakPbcAsyncTransport:
         msg_code, resp = await self._request(messages.MSG_CODE_GET_REQ, req,
                                              messages.MSG_CODE_GET_RESP)
         if resp is not None:
-            print(resp.content)
-            # self._decode_contents(resp.content)
+            # if resp.HasField('vclock'):
+            #    robj.vclock = VClock(resp.vclock, 'binary')
+            # We should do this even if there are no contents, i.e.
+            # the object is tombstoned
+            self._decode_contents(resp.content, robj)
+        else:
+            # "not found" returns an empty message,
+            # so let's make sure to clear the siblings
+            robj.siblings = []
         return robj

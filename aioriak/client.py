@@ -4,12 +4,29 @@ os.environ['PYTHONASYNCIODEBUG'] = '1'
 # logging.basicConfig(level=logging.DEBUG)
 
 import asyncio
+import json
 from weakref import WeakValueDictionary
 from transport import create_transport
 from bucket import BucketType, Bucket
+from riak.resolver import default_resolver
+from riak.util import bytes_to_str
 
 
 logger = logging.getLogger('aioriak.client')
+
+
+def binary_json_decoder(obj):
+    '''
+    Default decoder from JSON datatypes.
+    '''
+    return json.loads(bytes_to_str(obj))
+
+
+def binary_encoder_decoder(obj):
+    """
+    Assumes value is already in binary format, so passes unchanged.
+    """
+    return obj
 
 
 class RiakClient:
@@ -19,6 +36,33 @@ class RiakClient:
         self._loop = loop
         self._bucket_types = WeakValueDictionary()
         self._buckets = WeakValueDictionary()
+        self._resolver = None
+        self._decoders = {'application/json': binary_json_decoder,
+                          'text/json': binary_json_decoder,
+                          'text/plain': bytes_to_str,
+                          'binary/octet-stream': binary_encoder_decoder}
+
+    def get_decoder(self, content_type):
+        """
+        Get the decoding function for the provided content type.
+        :param content_type: the requested media type
+        :type content_type: str
+        :rtype: function
+        """
+        return self._decoders.get(content_type)
+
+    def _get_resolver(self):
+        return self._resolver or default_resolver
+
+    def _set_resolver(self, value):
+        if value is None or callable(value):
+            self._resolver = value
+        else:
+            raise TypeError('resolver is not a function')
+
+    resolver = property(_get_resolver, _set_resolver,
+                        doc='''The sibling-resolution function for this client.
+                        Defaults to :func:`riak.resolver.default_resolver`.''')
 
     async def _create_transport(self):
         self._transport = await create_transport(
@@ -194,8 +238,7 @@ if __name__ == '__main__':
         keys = await bucket.get_keys()
         print('keys count', len(keys))
         res = await client.get_client_id()
-        obj = await bucket.get(
-            '2016-01-02-5e43e39ff4d644fbbc805f2370660276-lenta')
+        obj = await bucket.get(keys[0])
         print(obj)
 
     loop.run_until_complete(test())
