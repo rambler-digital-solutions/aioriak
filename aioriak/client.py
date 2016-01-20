@@ -189,18 +189,13 @@ if __name__ == '__main__':
         await bucket_type.set_property('n_val', 3)
         res = await client.get_bucket_type_props(bucket_type)
         print(res)
-        '''bucket = (await bucket_type.get_buckets())[0]
+        bucket = (await bucket_type.get_buckets())[0]
         print(bucket)
         keys = await bucket.get_keys()
-        print(keys)
-        res = await client.get_client_id()'''
-        obj = await bucket_type.bucket('counters').get(
+        print('keys count', len(keys))
+        res = await client.get_client_id()
+        obj = await bucket.get(
             '2016-01-02-5e43e39ff4d644fbbc805f2370660276-lenta')
         print(obj)
-
-        '''res = await conn.get(
-            bucket_type=b'counter_map', bucket=b'counters',
-            key=b'2015-12-51-578c8259a3d946dab994abb97717a469-lenta')
-        print(res)'''
 
     loop.run_until_complete(test())

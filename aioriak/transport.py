@@ -140,19 +140,138 @@ class RPBParser:
         if pbclass is None:
             return None
         pbo = pbclass()
-        try:
-            pbo.ParseFromString(bytes(msg))
-        except Exception as e:
-            print('parsing error', self._msglen, len(msg))
-            print('parsed msg:', msg)
-            print('parsed header', self._data[:self.HEADER_LENGTH])
-            print('data', self._data)
-            raise e
+        pbo.ParseFromString(bytes(msg))
         return pbo
 
 
+class RPBPacketParser:
+    """ Riak protobuf packet parser."""
+    HEADER_LENGTH = 4
+
+    def __init__(self, reader, initial_data=bytearray(), loop=None):
+        self._loop = loop or asyncio.get_event_loop()
+        self._data = initial_data
+        self._reader = reader
+        self._header_parsed = False
+        self._tail = bytearray()
+        self._eof = False
+
+    @property
+    def tail(self):
+        return self._tail
+
+    def _parse_header(self):
+        if self._header_parsed:
+            return True
+        if len(self._data) >= self.HEADER_LENGTH:
+            self._msglen, = struct.unpack(
+                '!i', self._data[:self.HEADER_LENGTH])
+            if self._msglen > 8192:
+                raise Exception('Wrong MESSAGE_LEN %d', self._msglen)
+            self._header_parsed = True
+        else:
+            self._header_parsed = False
+        return self._header_parsed
+
+    def _parse_msg(self):
+        self._msg = self._data[
+            self.HEADER_LENGTH:self.HEADER_LENGTH + self._msglen]
+        self.msg_code, = struct.unpack("B", self._msg[:1])
+        if self.msg_code is messages.MSG_CODE_ERROR_RESP:
+            logger.error('Riak error message reciever')
+            raise Exception('Raik error', self._msg)
+        elif self.msg_code in messages.MESSAGE_CLASSES:
+            logger.debug('Normal message with code %d received', self.msg_code)
+            self.msg = self._get_pb_msg(self.msg_code, self._msg[1:])
+        else:
+            logger.error('Unknown message received [%d]', self.msg_code)
+
+    def _grow_tail(self):
+        if len(self._data) > self._msglen + self.HEADER_LENGTH:
+            self._tail = self._data[
+                self.HEADER_LENGTH + self._msglen:]
+        else:
+            self._tail = bytearray()
+
+    def _check_eof(self):
+        if self._header_parsed and \
+                len(self._data) >= self.HEADER_LENGTH + self._msglen:
+            self._eof = True
+        return self._eof
+
+    def _get_pb_msg(self, code, msg):
+        try:
+            pbclass = messages.MESSAGE_CLASSES[code]
+        except KeyError:
+            pbclass = None
+
+        if pbclass is None:
+            return None
+        pbo = pbclass()
+        pbo.ParseFromString(bytes(msg))
+        return pbo
+
+    def at_eof(self):
+        return self._eof
+
+    async def get_pbo(self):
+        if self._parse_header():
+            if self._check_eof():
+                self._parse_msg()
+                self._grow_tail()
+                return self.msg_code, self.msg
+
+        while not self.at_eof():
+            chunk = await self._reader.read(MAX_CHUNK_SIZE)
+            self._data.extend(chunk)
+            self._parse_header()
+            if self._check_eof():
+                self._parse_msg()
+                self._grow_tail()
+                return self.msg_code, self.msg
+
+
+class RPBStreamParser:
+    '''
+    Riak protobuf stream packets parser
+    This class is async generator with feed_data method
+    and iterable packets on stream
+    '''
+
+    def __init__(self, reader, loop=None):
+        self._loop = loop or asyncio.get_event_loop()
+        self._reader = reader
+        self._in_buf = bytearray()
+        self.finished = False
+
+    @property
+    def tail(self):
+        return self._in_buf
+
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.finished:
+            raise StopAsyncIteration
+        msg_code, pbo = await self._fetch_pbo()
+        if msg_code is not None:
+            if pbo.done:
+                self.finished = True
+            return (msg_code, pbo)
+        else:
+            raise StopAsyncIteration
+
+    async def _fetch_pbo(self):
+        parser = RPBPacketParser(self._reader, self._in_buf, self._loop)
+        code, pbo = await parser.get_pbo()
+        self._in_buf = parser.tail
+        return code, pbo
+
+
 class RiakPbcAsyncTransport:
-    ParserClass = RPBParser
+    ParserClass = RPBPacketParser
+    StreamParserClass = RPBStreamParser
 
     def __init__(self, reader, writer, loop=None):
         self._loop = loop or asyncio.get_event_loop()
@@ -203,22 +322,25 @@ class RiakPbcAsyncTransport:
             result[key.name] = value
         return result
 
+    async def _stream(self, msg_code, msg=None, expect=None):
+        self._writer.write(self._encode_message(msg_code, msg))
+        self._parser = self.StreamParserClass(self._reader)
+        responses = []
+        async for code, pbo in self._parser:
+            if expect is not None and code != expect:
+                raise Exception('Unexpected response code ({})'.format(code))
+            responses.append((code, pbo))
+        return responses
+
     async def _request(self, msg_code, msg=None, expect=None):
         self._writer.write(self._encode_message(msg_code, msg))
-
         if self._parser:
             tail = self._parser.tail
             del self._parser
         else:
             tail = bytearray()
-        self._parser = self.ParserClass(tail)
-
-        code, response = await self._read_response()
-        while not response.done:
-            tail = self._parser.tail
-            del self._parser
-            self._parser = self.ParserClass(tail)
-            code, response = await self._read_response()
+        self._parser = self.ParserClass(self._reader, tail)
+        code, response = await self._parser.get_pbo()
 
         if expect is not None and code != expect:
             raise Exception('Unexpected response code ({})'.format(code))
@@ -323,9 +445,13 @@ class RiakPbcAsyncTransport:
         """
         req = riak_pb.RpbListKeysReq()
         req.bucket = bucket.name.encode()
+        keys = []
         self._add_bucket_type(req, bucket.bucket_type)
-        code, res = await self._request(messages.MSG_CODE_LIST_KEYS_REQ, req)
-        return res
+        for code, res in await self._stream(messages.MSG_CODE_LIST_KEYS_REQ,
+                                            req,
+                                            messages.MSG_CODE_LIST_KEYS_RESP):
+            keys += res.keys
+        return keys
 
     async def get(self, robj):
         '''

@@ -1,3 +1,6 @@
+import os
+os.environ['PYTHONASYNCIODEBUG'] = '1'
+
 import asyncio
 from client import RiakClient
 from riak import RiakClient as ReferenceClient
