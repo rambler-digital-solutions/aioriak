@@ -1,4 +1,4 @@
-# Python Client for Riak #
+# Python asyncio client for Riak #
 
 ## Installation ##
 The minimal versions of Python for use with this client are Python 3.5.x.
