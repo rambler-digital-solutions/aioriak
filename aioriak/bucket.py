@@ -1,6 +1,3 @@
-# from riak import bucket
-
-
 class Bucket:
     """
     The ``Bucket`` object allows you to access and change information
@@ -67,6 +64,8 @@ class Bucket:
         :rtype: :class:`RiakObject <aioriak.riak_object.RiakObject>` or
            :class:`~aioriak.datatypes.Datatype`
         '''
+        if await self.bucket_type.get_datatype():
+            print('+' * 80)
         from riak_object import RiakObject
         obj = RiakObject(self._client, self, key)
         return await obj.reload()
@@ -182,49 +181,11 @@ class BucketType:
         '''
         return await self._client.get_buckets(bucket_type=self)
 
-    '''def stream_buckets(self, timeout=None):
-        """
-        Streams the list of buckets under this bucket-type. This is a
-        generator method that should be iterated over.
-        The caller must close the stream when finished.  See
-        :meth:`RiakClient.stream_buckets()
-        <riak.client.RiakClient.stream_buckets>` for more details.
-        .. warning:: Do not use this in production, as it requires
-           traversing through all keys stored in a cluster.
-        :param timeout: a timeout value in milliseconds
-        :type timeout: int
-        :rtype: iterator that yields lists of :class:`RiakBucket
-             <riak.bucket.RiakBucket>` instances
-        """
-        return self._client.stream_buckets(bucket_type=self, timeout=timeout)
-
-    @lazy_property
-    def datatype(self):
-        """
+    async def get_datatype(self):
+        '''
         The assigned datatype for this bucket type, if present.
         :rtype: None or string
-        """
-        if self.is_default():
-            return None
-        else:
-            return self.get_properties().get('datatype')
-
-    def __str__(self):
-        return "<BucketType {0!r}>".format(self.name)
-
-    __repr__ = __str__
-
-    def __hash__(self):
-        return hash((self.name, self._client))
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return hash(self) == hash(other)
-        else:
-            return False
-
-    def __ne__(self, other):
-        if isinstance(other, self.__class__):
-            return hash(self) != hash(other)
-        else:
-            return True'''
+        '''
+        if not hasattr(self, '_datatype'):
+            self._datatype = (await self.get_properties()).get('datatype')
+        return self._datatype

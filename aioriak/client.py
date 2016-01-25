@@ -23,9 +23,9 @@ def binary_json_decoder(obj):
 
 
 def binary_encoder_decoder(obj):
-    """
+    '''
     Assumes value is already in binary format, so passes unchanged.
-    """
+    '''
     return obj
 
 
@@ -120,14 +120,14 @@ class RiakClient:
                     bucket_type=bucket_type)]
 
     def bucket_type(self, name):
-        """
+        '''
         Gets the bucket-type by the specified name. Bucket-types do
         not always exist (unlike buckets), but this will always return
         a :class:`BucketType <riak.bucket.BucketType>` object.
         :param name: the bucket name
         :type name: str
         :rtype: :class:`BucketType <riak.bucket.BucketType>`
-        """
+        '''
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
 
@@ -139,7 +139,7 @@ class RiakClient:
             return btype
 
     def bucket(self, name, bucket_type='default'):
-        """
+        '''
         Get the bucket by the specified name. Since buckets always exist,
         this will always return a
         :class:`RiakBucket <aioriak.bucket.RiakBucket>`.
@@ -155,7 +155,7 @@ class RiakClient:
         :type bucket_type: :class:`BucketType <riak.bucket.BucketType>`
               or str
         :rtype: :class:`RiakBucket <riak.bucket.RiakBucket>`
-        """
+        '''
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
 
@@ -169,28 +169,28 @@ class RiakClient:
                                         Bucket(self, name, bucket_type))
 
     async def get_bucket_type_props(self, bucket_type):
-        """
+        '''
         get_bucket_type_props(bucket_type)
         Fetches properties for the given bucket-type.
         :param bucket_type: the bucket-type whose properties will be fetched
         :type bucket_type: BucketType
         :rtype: dict
-        """
+        '''
         return await self._transport.get_bucket_type_props(bucket_type)
 
     async def set_bucket_type_props(self, bucket_type, props):
-        """
+        '''
         set_bucket_type_props(bucket_type, props)
         Sets properties for the given bucket-type.
         :param bucket_type: the bucket-type whose properties will be set
         :type bucket_type: BucketType
         :param props: the properties to set
         :type props: dict
-        """
+        '''
         return await self._transport.set_bucket_type_props(bucket_type, props)
 
     async def get_keys(self, bucket):
-        """
+        '''
         get_keys(bucket)
         Lists all keys in a bucket.
         .. warning:: Do not use this in production, as it requires
@@ -198,7 +198,7 @@ class RiakClient:
         :param bucket: the bucket whose keys are fetched
         :type bucket: Bucket
         :rtype: list
-        """
+        '''
         return await self._transport.get_keys(bucket)
 
     async def get(self, robj):
@@ -239,6 +239,6 @@ if __name__ == '__main__':
         print('keys count', len(keys))
         res = await client.get_client_id()
         obj = await bucket.get(keys[0])
-        print(obj)
+        print(obj.data)
 
     loop.run_until_complete(test())

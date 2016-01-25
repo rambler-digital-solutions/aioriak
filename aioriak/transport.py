@@ -225,6 +225,83 @@ class RiakPbcAsyncTransport:
             result[key.name] = value
         return result
 
+    def _decode_bucket_props(self, msg):
+        '''
+        Decodes the protobuf bucket properties message into a dict.
+        :param msg: the protobuf message to decode
+        :type msg: riak_pb.RpbBucketProps
+        :rtype dict
+        '''
+        props = {}
+
+        for prop_name in codec.NORMAL_PROPS:
+            if msg.HasField(prop_name):
+                prop = getattr(msg, prop_name)
+                if isinstance(prop, bytes):
+                    props[prop_name] = prop.decode()
+                else:
+                    props[prop_name] = prop
+        for prop in codec.COMMIT_HOOK_PROPS:
+            if getattr(msg, 'has_' + prop):
+                props[prop] = self._decode_hooklist(getattr(msg, prop))
+        for prop in codec.MODFUN_PROPS:
+            if msg.HasField(prop):
+                props[prop] = self._decode_modfun(getattr(msg, prop))
+        for prop in codec.QUORUM_PROPS:
+            if msg.HasField(prop):
+                props[prop] = self._decode_quorum(getattr(msg, prop))
+        if msg.HasField('repl'):
+            props['repl'] = codec.REPL_TO_PY[msg.repl]
+
+        return props
+
+    def _decode_hooklist(self, hooklist):
+        '''
+        Decodes a list of protobuf commit hooks into their python
+        equivalents. Used in bucket properties.
+        :param hooklist: a list of protobuf commit hooks
+        :type hooklist: list
+        :rtype list
+        '''
+        return [self._decode_hook(hook) for hook in hooklist]
+
+    def _decode_hook(self, hook):
+        '''
+        Decodes a protobuf commit hook message into a dict. Used in
+        bucket properties.
+        :param hook: the hook to decode
+        :type hook: riak_pb.RpbCommitHook
+        :rtype dict
+        '''
+        if hook.HasField('modfun'):
+            return self._decode_modfun(hook.modfun)
+        else:
+            return {'name': hook.name}
+
+    def _decode_modfun(self, modfun):
+        '''
+        Decodes a protobuf modfun pair into a dict with 'mod' and
+        'fun' keys. Used in bucket properties.
+        :param modfun: the protobuf message to decode
+        :type modfun: riak_pb.RpbModFun
+        :rtype dict
+        '''
+        return {'mod': modfun.module.decode(),
+                'fun': modfun.function.decode()}
+
+    def _decode_quorum(self, rw):
+        '''
+        Converts a protobuf quorum value to a symbolic value if
+        necessary.
+        :param rw: the quorum
+        :type rw: int
+        :rtype int or string
+        '''
+        if rw in codec.QUORUM_TO_PY:
+            return codec.QUORUM_TO_PY[rw]
+        else:
+            return rw
+
     async def _stream(self, msg_code, msg=None, expect=None):
         self._writer.write(self._encode_message(msg_code, msg))
         self._parser = self.StreamParserClass(self._reader)
@@ -310,7 +387,7 @@ class RiakPbcAsyncTransport:
         msg_code, resp = await self._request(
             messages.MSG_CODE_GET_BUCKET_TYPE_REQ, req,
             messages.MSG_CODE_GET_BUCKET_RESP)
-        return resp
+        return self._decode_bucket_props(resp.props)
 
     async def fetch_datatype(self, bucket, key):
 
