@@ -10,6 +10,7 @@ from transport import create_transport
 from bucket import BucketType, Bucket
 from riak.resolver import default_resolver
 from riak.util import bytes_to_str
+from riak.datatypes import TYPES
 
 
 logger = logging.getLogger('aioriak.client')
@@ -80,6 +81,36 @@ class RiakClient:
         client = cls(host, port, loop)
         await client._create_transport()
         return client
+
+    async def fetch_datatype(self, bucket, key):
+        '''
+        Fetches the value of a Riak Datatype.
+        :param bucket: the bucket of the datatype, which must belong to a
+          :class:`~aioriak.bucket.BucketType`
+        :type bucket: :class:`~aioriak.bucket.Bucket`
+        :param key: the key of the datatype
+        :type key: string
+        :rtype: :class:`~riak.datatypes.Datatype`
+        '''
+        dtype, value, context = await self._fetch_datatype(bucket, key)
+
+        return TYPES[dtype](bucket=bucket, key=key, value=value,
+                            context=context)
+
+    async def _fetch_datatype(self, bucket, key):
+        '''
+        _fetch_datatype(bucket, key)
+        Fetches the value of a Riak Datatype as raw data. This is used
+        internally to update already reified Datatype objects. Use the
+        public version to fetch a reified type.
+        :param bucket: the bucket of the datatype, which must belong to a
+          :class:`~aioriak.BucketType`
+        :type bucket: RiakBucket
+        :param key: the key of the datatype
+        :type key: string, None
+        :rtype: tuple of type, value and context
+        '''
+        return await self._transport.fetch_datatype(bucket, key)
 
     async def ping(self):
         '''
@@ -239,6 +270,8 @@ if __name__ == '__main__':
         print('keys count', len(keys))
         res = await client.get_client_id()
         obj = await bucket.get(keys[0])
-        print(obj.data)
+        print(obj)
+        print(obj.sets[list(obj.sets.keys())[0]])
+        print(obj.key)
 
     loop.run_until_complete(test())

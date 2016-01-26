@@ -225,6 +225,49 @@ class RiakPbcAsyncTransport:
             result[key.name] = value
         return result
 
+    def _decode_dt_fetch(self, resp):
+        dtype = codec.DT_FETCH_TYPES.get(resp.type)
+        if dtype is None:
+            raise ValueError("Unknown datatype on wire: {}".format(resp.type))
+
+        value = self._decode_dt_value(dtype, resp.value)
+
+        if resp.HasField('context'):
+            context = resp.context[:]
+        else:
+            context = None
+
+        return dtype, value, context
+
+    def _decode_dt_value(self, dtype, msg):
+        if dtype == 'counter':
+            return msg.counter_value
+        elif dtype == 'set':
+            return self._decode_set_value(msg.set_value)
+        elif dtype == 'map':
+            return self._decode_map_value(msg.map_value)
+
+    def _decode_map_value(self, entries):
+        out = {}
+        for entry in entries:
+            name = entry.field.name[:].decode()
+            dtype = codec.MAP_FIELD_TYPES[entry.field.type]
+            if dtype == 'counter':
+                value = entry.counter_value
+            elif dtype == 'set':
+                value = self._decode_set_value(entry.set_value)
+            elif dtype == 'register':
+                value = entry.register_value[:].decode()
+            elif dtype == 'flag':
+                value = entry.flag_value
+            elif dtype == 'map':
+                value = self._decode_map_value(entry.map_value)
+            out[(name, dtype)] = value
+        return out
+
+    def _decode_set_value(self, set_value):
+        return [string[:].decode() for string in set_value]
+
     def _decode_bucket_props(self, msg):
         '''
         Decodes the protobuf bucket properties message into a dict.
