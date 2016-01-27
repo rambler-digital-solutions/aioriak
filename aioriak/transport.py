@@ -192,7 +192,11 @@ class RiakPbcAsyncTransport:
         """
         for prop in codec.NORMAL_PROPS:
             if prop in props and props[prop] is not None:
-                setattr(msg.props, prop, props[prop])
+                if isinstance(props[prop], str):
+                    prop_value = props[prop].encode()
+                else:
+                    prop_value = props[prop]
+                setattr(msg.props, prop, prop_value)
         for prop in codec.COMMIT_HOOK_PROPS:
             if prop in props:
                 setattr(msg.props, 'has_' + prop, True)
