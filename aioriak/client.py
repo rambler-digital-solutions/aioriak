@@ -3,11 +3,10 @@ import logging
 os.environ['PYTHONASYNCIODEBUG'] = '1'
 # logging.basicConfig(level=logging.DEBUG)
 
-import asyncio
 import json
 from weakref import WeakValueDictionary
-from transport import create_transport
-from bucket import BucketType, Bucket
+from .transport import create_transport
+from .bucket import BucketType, Bucket
 from riak.resolver import default_resolver
 from riak.util import bytes_to_str
 from riak.datatypes import TYPES
@@ -244,34 +243,3 @@ class RiakClient:
                 'key must be a string, instead got {0}'.format(repr(robj.key)))
 
         return await self._transport.get(robj)
-
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-
-    async def test():
-        client = await RiakClient.create('localhost', loop=loop)
-        await client.ping()
-        await client.ping()
-        res = await client.get_client_id()
-        print('client id:', res)
-        res = await client.set_client_id(b'test')
-        print(res)
-        res = await client.get_client_id()
-        print(res)
-        bucket_type = client.bucket_type('counter_map')
-        print(await bucket_type.get_properties())
-        await bucket_type.set_property('n_val', 3)
-        res = await client.get_bucket_type_props(bucket_type)
-        print(res)
-        bucket = (await bucket_type.get_buckets())[0]
-        print(bucket)
-        keys = await bucket.get_keys()
-        print('keys count', len(keys))
-        res = await client.get_client_id()
-        obj = await bucket.get(keys[0])
-        print(obj)
-        print(obj.sets[list(obj.sets.keys())[0]])
-        print(obj.key)
-
-    loop.run_until_complete(test())

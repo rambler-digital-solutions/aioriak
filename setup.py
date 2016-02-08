@@ -12,6 +12,7 @@ setup(
     packages=find_packages('', exclude=('*.tests',)),
     include_package_data=True,
     zip_safe=False,
+    license='MIT',
     install_requires=[
         'python3-riak-pb==2.1.0.6',
         'riak==2.3.0',
