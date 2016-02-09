@@ -1,3 +1,0 @@
-[submodule "tests/docker"]
-	path = tests/docker
-	url = https://github.com/hectcastro/docker-riak.git
