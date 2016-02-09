@@ -1,8 +1,4 @@
-import os
 import logging
-os.environ['PYTHONASYNCIODEBUG'] = '1'
-# logging.basicConfig(level=logging.DEBUG)
-
 import json
 from weakref import WeakValueDictionary
 from .transport import create_transport

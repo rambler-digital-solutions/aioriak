@@ -1,8 +1,4 @@
-import os
 import logging
-os.environ['PYTHONASYNCIODEBUG'] = '1'
-# logging.basicConfig(level=logging.DEBUG)
-
 import asyncio
 import struct
 import riak_pb
@@ -16,16 +12,6 @@ MAX_CHUNK_SIZE = 65536
 MAX_CHUNK_SIZE = 1024
 
 logger = logging.getLogger('aioriak.transport')
-
-# Debug
-import sys
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler = logging.StreamHandler(stream=sys.stdout)
-handler.setFormatter(formatter)
-handler.setLevel(logging.DEBUG)
-logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
 
 
 async def create_transport(host='localhost', port=8087, loop=None):
