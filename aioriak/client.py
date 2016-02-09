@@ -61,7 +61,7 @@ class RiakClient:
                         Defaults to :func:`riak.resolver.default_resolver`.''')
 
     def close(self):
-        pass
+        self._transport.close()
 
     async def _create_transport(self):
         self._transport = await create_transport(

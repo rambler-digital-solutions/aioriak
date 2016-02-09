@@ -5,8 +5,7 @@ import unittest
 
 
 class IntegrationTest:
-    def tearDown(self):
-        self.client.close()
+    pass
 
 
 class AsyncUnitTestCase(unittest.TestCase):
@@ -23,4 +22,5 @@ class AsyncUnitTestCase(unittest.TestCase):
         self.client = self.create_client()
 
     def tearDown(self):
+        self.client.close()
         self.loop.stop()
