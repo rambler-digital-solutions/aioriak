@@ -393,7 +393,7 @@ class RiakPbcAsyncTransport:
         _, res = await self._request(
             messages.MSG_CODE_GET_CLIENT_ID_REQ,
             expect=messages.MSG_CODE_GET_CLIENT_ID_RESP)
-        return self._decode_pbo(res)
+        return self._decode_pbo(res)['client_id']
 
     async def set_client_id(self, client_id):
         req = riak_pb.RpbSetClientIdReq()

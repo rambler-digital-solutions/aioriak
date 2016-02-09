@@ -60,6 +60,9 @@ class RiakClient:
                         doc='''The sibling-resolution function for this client.
                         Defaults to :func:`riak.resolver.default_resolver`.''')
 
+    def close(self):
+        pass
+
     async def _create_transport(self):
         self._transport = await create_transport(
             self._host, self._port, self._loop)
