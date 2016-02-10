@@ -2,10 +2,20 @@ import asyncio
 from aioriak import RiakClient
 from aioriak.tests import HOST, PORT
 import unittest
+import random
 
 
 class IntegrationTest:
-    pass
+    @classmethod
+    def randname(cls, length=12):
+        out = ''
+        for i in range(length):
+            out += chr(random.randint(ord('a'), ord('z')))
+        return out
+
+    def setUp(self):
+        super().setUp()
+        self.bucket_name = self.randname()
 
 
 class AsyncUnitTestCase(unittest.TestCase):
@@ -18,9 +28,10 @@ class AsyncUnitTestCase(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
         self.client = self.create_client()
 
     def tearDown(self):
         self.client.close()
         self.loop.stop()
+        self.loop.close()
