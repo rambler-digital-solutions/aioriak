@@ -32,6 +32,7 @@ class AsyncUnitTestCase(unittest.TestCase):
         self.client = self.create_client()
 
     def tearDown(self):
+        super().tearDown()
         self.client.close()
         self.loop.stop()
         self.loop.close()

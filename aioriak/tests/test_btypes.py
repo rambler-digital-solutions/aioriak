@@ -16,7 +16,7 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
         self.assertIs(btype, bucket.bucket_type)
         self.assertIs(bucket,
                       self.client.bucket_type('foo').bucket(self.bucket_name))
-        self.assertIs(btype, BucketType(self.client, 'foo'))
+        self.assertEqual(btype, BucketType(self.client, 'foo'))
         self.assertIsNot(bucket, self.client.bucket(self.bucket_name))
 
     def test_btype_default(self):
@@ -35,10 +35,12 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
 
     def test_btype_get_props(self):
         async def go():
-            defbtype = self.client.bucket_type("default")
-            btype = self.client.bucket_type("pytest")
-            with self.assertRaises(ValueError):
-                await defbtype.get_properties()
+            defbtype = self.client.bucket_type('default')
+            btype = self.client.bucket_type('pytest')
+            props = await defbtype.get_properties()
+            self.assertIsInstance(props, dict)
+            self.assertIn('n_val', props)
+            self.assertEqual(3, props['n_val'])
 
             props = await btype.get_properties()
             self.assertIsInstance(props, dict)

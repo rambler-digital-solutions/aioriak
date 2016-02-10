@@ -101,6 +101,21 @@ class BucketType:
     def __repr__(self):
         return "<BucketType {0}>".format(self.name)
 
+    def __hash__(self):
+        return hash((self.name, self._client))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return hash(self) == hash(other)
+        else:
+            return False
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return hash(self) != hash(other)
+        else:
+            return True
+
     def _get_resolver(self):
         if callable(self._resolver):
             return self._resolver
