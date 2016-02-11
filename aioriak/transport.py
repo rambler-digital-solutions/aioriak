@@ -51,6 +51,7 @@ class RPBPacketParser:
         return self._tail
 
     def _parse_header(self):
+        ''' Parse protobuf message header '''
         if self._header_parsed:
             return True
         if len(self._data) >= self.HEADER_LENGTH:
@@ -64,6 +65,7 @@ class RPBPacketParser:
         return self._header_parsed
 
     def _parse_msg(self):
+        ''' Parse protobuf message'''
         self._msg = self._data[
             self.HEADER_LENGTH:self.HEADER_LENGTH + self._msglen]
         self.msg_code, = struct.unpack("B", self._msg[:1])
@@ -92,6 +94,7 @@ class RPBPacketParser:
         return self._eof
 
     def _get_pb_msg(self, code, msg):
+        ''' Return protobuf object from raw mesage'''
         try:
             pbclass = messages.MESSAGE_CLASSES[code]
         except KeyError:

@@ -1,5 +1,6 @@
 from aioriak.tests.base import IntegrationTest, AsyncUnitTestCase
 from aioriak.bucket import BucketType, Bucket
+from aioriak.error import RiakError
 
 
 class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
@@ -46,4 +47,31 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
             self.assertIsInstance(props, dict)
             self.assertIn('n_val', props)
             self.assertEqual(3, props['n_val'])
+        self.loop.run_until_complete(go())
+
+    def test_btype_set_props(self):
+        async def go():
+            defbtype = self.client.bucket_type("default")
+            btype = self.client.bucket_type("pytest")
+            with self.assertRaises(RiakError):
+                await defbtype.set_properties({'allow_mult': True})
+
+            oldprops = await btype.get_properties()
+            try:
+                await btype.set_properties({'allow_mult': True})
+                newprops = await btype.get_properties()
+                self.assertIsInstance(newprops, dict)
+                self.assertIn('allow_mult', newprops)
+                self.assertTrue(newprops['allow_mult'])
+                if 'claimant' in oldprops:  # HTTP hack
+                    del oldprops['claimant']
+            finally:
+                await btype.set_properties(oldprops)
+        self.loop.run_until_complete(go())
+
+    def test_btype_set_props_immutable(self):
+        async def go():
+            btype = self.client.bucket_type("pytest-maps")
+            with self.assertRaises(RiakError):
+                await btype.set_property('datatype', 'counter')
         self.loop.run_until_complete(go())
