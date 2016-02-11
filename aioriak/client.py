@@ -39,12 +39,12 @@ class RiakClient:
                           'binary/octet-stream': binary_encoder_decoder}
 
     def get_decoder(self, content_type):
-        """
+        '''
         Get the decoding function for the provided content type.
         :param content_type: the requested media type
         :type content_type: str
         :rtype: function
-        """
+        '''
         return self._decoders.get(content_type)
 
     def _get_resolver(self):

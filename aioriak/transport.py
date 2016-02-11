@@ -68,8 +68,9 @@ class RPBPacketParser:
             self.HEADER_LENGTH:self.HEADER_LENGTH + self._msglen]
         self.msg_code, = struct.unpack("B", self._msg[:1])
         if self.msg_code is messages.MSG_CODE_ERROR_RESP:
-            logger.error('Riak error message reciever')
             error = self._get_pb_msg(self.msg_code, self._msg[1:])
+            logger.error('Riak error message recieved: %s',
+                         bytes_to_str(error.errmsg))
             raise RiakError(bytes_to_str(error.errmsg))
         elif self.msg_code in messages.MESSAGE_CLASSES:
             logger.debug('Normal message with code %d received', self.msg_code)
@@ -201,6 +202,65 @@ class RiakPbcAsyncTransport:
             msg.props.repl = codec.REPL_TO_PY[props['repl']]
 
         return msg
+
+    def _encode_hooklist(self, hooklist, msg):
+        '''
+        Encodes a list of commit hooks into their protobuf equivalent.
+        Used in bucket properties.
+        :param hooklist: a list of commit hooks
+        :type hooklist: list
+        :param msg: a protobuf field that is a list of commit hooks
+        '''
+        for hook in hooklist:
+            pbhook = msg.add()
+            self._encode_hook(hook, pbhook)
+
+    def _encode_hook(self, hook, msg):
+        '''
+        Encodes a commit hook dict into the protobuf message. Used in
+        bucket properties.
+        :param hook: the hook to encode
+        :type hook: dict
+        :param msg: the protobuf message to fill
+        :type msg: riak_pb.RpbCommitHook
+        :rtype riak_pb.RpbCommitHook
+        '''
+        if 'name' in hook:
+            msg.name = hook['name']
+        else:
+            self._encode_modfun(hook, msg.modfun)
+        return msg
+
+    def _encode_modfun(self, props, msg=None):
+        '''
+        Encodes a dict with 'mod' and 'fun' keys into a protobuf
+        modfun pair. Used in bucket properties.
+        :param props: the module/function pair
+        :type props: dict
+        :param msg: the protobuf message to fill
+        :type msg: riak_pb.RpbModFun
+        :rtype riak_pb.RpbModFun
+        '''
+        if msg is None:
+            msg = riak_pb.RpbModFun()
+        msg.module = props['mod'].encode()
+        msg.function = props['fun'].encode()
+        return msg
+
+    def _encode_quorum(self, rw):
+        '''
+        Converts a symbolic quorum value into its on-the-wire
+        equivalent.
+        :param rw: the quorum
+        :type rw: string, integer
+        :rtype: integer
+        '''
+        if rw in codec.QUORUM_TO_PB:
+            return codec.QUORUM_TO_PB[rw]
+        elif type(rw) is int and rw >= 0:
+            return rw
+        else:
+            return None
 
     def _encode_message(self, msg_code, msg=None):
         if msg is None:
