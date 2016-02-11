@@ -5,7 +5,8 @@ import riak_pb
 from riak_pb import messages
 from riak.transports.pbc import codec
 from riak.content import RiakContent
-from riak.util import decode_index_value
+from riak.util import decode_index_value, bytes_to_str
+from aioriak.error import RiakError
 
 
 MAX_CHUNK_SIZE = 65536
@@ -56,7 +57,7 @@ class RPBPacketParser:
             self._msglen, = struct.unpack(
                 '!i', self._data[:self.HEADER_LENGTH])
             if self._msglen > 8192:
-                raise Exception('Wrong MESSAGE_LEN %d', self._msglen)
+                raise RiakError('Wrong MESSAGE_LEN %d', self._msglen)
             self._header_parsed = True
         else:
             self._header_parsed = False
@@ -68,7 +69,8 @@ class RPBPacketParser:
         self.msg_code, = struct.unpack("B", self._msg[:1])
         if self.msg_code is messages.MSG_CODE_ERROR_RESP:
             logger.error('Riak error message reciever')
-            raise Exception('Raik error', self._msg)
+            error = self._get_pb_msg(self.msg_code, self._msg[1:])
+            raise RiakError(bytes_to_str(error.errmsg))
         elif self.msg_code in messages.MESSAGE_CLASSES:
             logger.debug('Normal message with code %d received', self.msg_code)
             self.msg = self._get_pb_msg(self.msg_code, self._msg[1:])
