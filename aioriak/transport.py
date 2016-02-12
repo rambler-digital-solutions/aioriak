@@ -5,7 +5,7 @@ import riak_pb
 from riak_pb import messages
 from riak.transports.pbc import codec
 from riak.content import RiakContent
-from riak.util import decode_index_value, bytes_to_str
+from riak.util import decode_index_value, bytes_to_str, str_to_bytes
 from aioriak.error import RiakError
 
 
@@ -173,6 +173,46 @@ class RiakPbcAsyncTransport:
         self._writer = writer
         self._reader = reader
         self._parser = None
+
+    def _encode_content(self, robj, rpb_content):
+        '''
+        Fills an RpbContent message with the appropriate data and
+        metadata from a RiakObject.
+        :param robj: a RiakObject
+        :type robj: RiakObject
+        :param rpb_content: the protobuf message to fill
+        :type rpb_content: riak_pb.RpbContent
+        '''
+        if robj.content_type:
+            rpb_content.content_type = robj.content_type.encode()
+        if robj.charset:
+            rpb_content.charset = robj.charset
+        if robj.content_encoding:
+            rpb_content.content_encoding = robj.content_encoding
+        for uk in robj.usermeta:
+            pair = rpb_content.usermeta.add()
+            pair.key = uk
+            pair.value = robj.usermeta[uk]
+        for link in robj.links:
+            pb_link = rpb_content.links.add()
+            try:
+                bucket, key, tag = link
+            except ValueError:
+                raise RiakError("Invalid link tuple %s" % link)
+
+            pb_link.bucket = bucket
+            pb_link.key = key
+            if tag:
+                pb_link.tag = tag
+            else:
+                pb_link.tag = ''
+
+        for field, value in robj.indexes:
+            pair = rpb_content.indexes.add()
+            pair.key = field
+            pair.value = value.encode()
+
+        rpb_content.value = robj.encoded_data
 
     def _encode_bucket_props(self, props, msg):
         """
@@ -655,4 +695,34 @@ class RiakPbcAsyncTransport:
             # "not found" returns an empty message,
             # so let's make sure to clear the siblings
             robj.siblings = []
+        return robj
+
+    async def put(self, robj):
+        bucket = robj.bucket
+
+        req = riak_pb.RpbPutReq()
+
+        req.bucket = str_to_bytes(bucket.name)
+        self._add_bucket_type(req, bucket.bucket_type)
+
+        if robj.key:
+            req.key = str_to_bytes(robj.key)
+        if robj.vclock:
+            req.vclock = robj.vclock.encode('binary')
+
+        self._encode_content(robj, req.content)
+
+        msg_code, resp = await self._request(messages.MSG_CODE_PUT_REQ, req,
+                                             messages.MSG_CODE_PUT_RESP)
+
+        if resp is not None:
+            if resp.HasField('key'):
+                robj.key = bytes_to_str(resp.key)
+            # if resp.HasField("vclock"):
+            #    robj.vclock = VClock(resp.vclock, 'binary')
+            if resp.content:
+                self._decode_contents(resp.content, robj)
+        elif not robj.key:
+            raise RiakError("missing response object")
+
         return robj

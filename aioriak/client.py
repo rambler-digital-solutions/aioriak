@@ -4,11 +4,35 @@ from weakref import WeakValueDictionary
 from .transport import create_transport
 from .bucket import BucketType, Bucket
 from riak.resolver import default_resolver
-from riak.util import bytes_to_str
+from riak.util import bytes_to_str, str_to_bytes
 from riak.datatypes import TYPES
 
 
 logger = logging.getLogger('aioriak.client')
+
+
+def default_encoder(obj):
+    '''
+    Default encoder for JSON datatypes, which returns UTF-8 encoded
+    json instead of the default bloated backslash u XXXX escaped ASCII strings.
+    '''
+    if isinstance(obj, bytes):
+        return json.dumps(bytes_to_str(obj),
+                          ensure_ascii=False).encode("utf-8")
+    else:
+        return json.dumps(obj, ensure_ascii=False).encode("utf-8")
+
+
+def binary_json_encoder(obj):
+    '''
+    Default encoder for JSON datatypes, which returns UTF-8 encoded
+    json instead of the default bloated backslash u XXXX escaped ASCII strings.
+    '''
+    if isinstance(obj, bytes):
+        return json.dumps(bytes_to_str(obj),
+                          ensure_ascii=False).encode("utf-8")
+    else:
+        return json.dumps(obj, ensure_ascii=False).encode("utf-8")
 
 
 def binary_json_decoder(obj):
@@ -37,6 +61,10 @@ class RiakClient:
                           'text/json': binary_json_decoder,
                           'text/plain': bytes_to_str,
                           'binary/octet-stream': binary_encoder_decoder}
+        self._encoders = {'application/json': binary_json_encoder,
+                          'text/json': binary_json_encoder,
+                          'text/plain': str_to_bytes,
+                          'binary/octet-stream': binary_encoder_decoder}
 
     def get_decoder(self, content_type):
         '''
@@ -46,6 +74,15 @@ class RiakClient:
         :rtype: function
         '''
         return self._decoders.get(content_type)
+
+    def get_encoder(self, content_type):
+        '''
+        Get the encoding function for the provided content type.
+        :param content_type: the requested media type
+        :type content_type: str
+        :rtype: function
+        '''
+        return self._encoders.get(content_type)
 
     def _get_resolver(self):
         return self._resolver or default_resolver
@@ -242,3 +279,12 @@ class RiakClient:
                 'key must be a string, instead got {0}'.format(repr(robj.key)))
 
         return await self._transport.get(robj)
+
+    async def put(self, robj):
+        '''
+        put(robj)
+        Stores an object in the Riak cluster.
+        :param robj: the object to store
+        :type robj: RiakObject
+        '''
+        return await self._transport.put(robj)

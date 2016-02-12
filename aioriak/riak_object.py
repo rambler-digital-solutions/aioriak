@@ -1,5 +1,6 @@
 from riak.content import RiakContent
 from riak.riak_object import content_property
+from aioriak.error import ConflictError
 
 
 class RiakObject:
@@ -27,6 +28,7 @@ class RiakObject:
         self.client = client
         self.bucket = bucket
         self.key = key
+        self.vclock = None
         self.siblings = [RiakContent(self)]
         self._resolver = None
 
@@ -44,6 +46,21 @@ class RiakObject:
         await self.client.get(self)
         return self
 
+    async def store(self):
+        '''
+        Store the object in Riak. When this operation completes, the
+        object could contain new metadata and possibly new data if Riak
+        contains a newer version of the object according to the object's
+        vector clock.
+        :rtype: :class:`RiakObject` '''
+        if len(self.siblings) != 1:
+            raise ConflictError("Attempting to store an invalid object, "
+                                "resolve the siblings first")
+
+        await self.client.put(self)
+
+        return self
+
     data = content_property('data', doc='''
         The data stored in this object, as Python objects. For the raw
         data, use the `encoded_data` property. If unset, accessing
@@ -58,6 +75,29 @@ class RiakObject:
         will result in encoding the `data` property into a string. The
         encoding is dependent on the `content_type` property and the
         bucket's registered encoders.
+        ''')
+
+    charset = content_property('charset', doc='''
+        The character set of the encoded data as a string
+        ''')
+
+    content_encoding = content_property('content_encoding', doc='''
+        The encoding (compression) of the encoded data. Valid values
+        are identity, deflate, gzip
+        ''')
+
+    usermeta = content_property('usermeta', doc='''
+        Arbitrary user-defined metadata dict, mapping strings to strings.
+        ''')
+
+    links = content_property('links', doc='''
+        A set of bucket/key/tag 3-tuples representing links to other
+        keys.
+        ''')
+
+    indexes = content_property('indexes', doc='''
+        The set of secondary index entries, consisting of
+        index-name/value tuples
         ''')
 
     def _get_resolver(self):

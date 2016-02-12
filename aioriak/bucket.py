@@ -1,3 +1,6 @@
+from aioriak.datatypes import TYPES
+
+
 class Bucket:
     """
     The ``Bucket`` object allows you to access and change information
@@ -35,17 +38,30 @@ class Bucket:
         self._resolver = None
 
     def get_decoder(self, content_type):
-        """
+        '''
         Get the decoding function for the provided content type for
         this bucket.
         :param content_type: the requested media type
         :type content_type: str
         :rtype: function
-        """
+        '''
         if content_type in self._decoders:
             return self._decoders[content_type]
         else:
             return self._client.get_decoder(content_type)
+
+    def get_encoder(self, content_type):
+        '''
+        Get the encoding function for the provided content type for
+        this bucket.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param content_type: Content type requested
+        '''
+        if content_type in self._encoders:
+            return self._encoders[content_type]
+        else:
+            return self._client.get_encoder(content_type)
 
     async def get_keys(self):
         """
@@ -69,6 +85,48 @@ class Bucket:
         from riak_object import RiakObject
         obj = RiakObject(self._client, self, key)
         return await obj.reload()
+
+    async def new(self, key=None, data=None, content_type='application/json',
+                  encoded_data=None):
+        '''A shortcut for manually instantiating a new
+        :class:`~aioriak.riak_object.RiakObject` or a new
+        :class:`~aioriak.datatypes.Datatype`, based on the presence and value
+        of the :attr:`datatype <BucketType.datatype>` bucket property. When
+        the bucket contains a :class:`~riak.datatypes.Datatype`, all
+        arguments are ignored except ``key``, otherwise they are used to
+        initialize the :class:`~riak.riak_object.RiakObject`.
+        :param key: Name of the key. Leaving this to be None (default)
+                    will make Riak generate the key on store.
+        :type key: str
+        :param data: The data to store in a
+           :class:`~aioriak.riak_object.RiakObject`, see
+           :attr:`RiakObject.data <aioriak.riak_object.RiakObject.data>`.
+        :type data: object
+        :param content_type: The media type of the data stored in the
+           :class:`~aioriak.riak_object.RiakObject`, see
+           :attr:`RiakObject.content_type
+           <aioriak.riak_object.RiakObject.content_type>`.
+        :type content_type: str
+        :param encoded_data: The encoded data to store in a
+           :class:`~aioriak.riak_object.RiakObject`, see
+           :attr:`RiakObject.encoded_data
+           <aioriak.riak_object.RiakObject.encoded_data>`.
+        :type encoded_data: str
+        :rtype: :class:`~aioriak.riak_object.RiakObject` or
+                :class:`~aioriak.datatypes.Datatype`
+        '''
+        from aioriak import RiakObject
+        datatype = await self.bucket_type.get_datatype()
+        if datatype:
+            return TYPES[datatype](bucket=self, key=key)
+
+        obj = RiakObject(self._client, self, key)
+        obj.content_type = content_type
+        if data is not None:
+            obj.data = data
+        if encoded_data is not None:
+            obj.encoded_data = encoded_data
+        return obj
 
     def __repr__(self):
         if self.bucket_type.is_default():
