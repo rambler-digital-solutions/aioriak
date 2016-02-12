@@ -78,7 +78,7 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
 
     def test_btype_list_buckets(self):
         async def go():
-            btype = self.client.bucket_type('default')
+            btype = self.client.bucket_type('pytest')
             bucket = btype.bucket(self.bucket_name)
             obj = await bucket.new(self.key_name)
             obj.data = [1, 2, 3]
@@ -89,7 +89,7 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
 
     def test_btype_list_keys(self):
         async def go():
-            btype = self.client.bucket_type('default')
+            btype = self.client.bucket_type('pytest')
             bucket = btype.bucket(self.bucket_name)
 
             obj = await bucket.new(self.key_name)
@@ -97,4 +97,35 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
             await obj.store()
 
             self.assertIn(self.key_name, await bucket.get_keys())
+        self.loop.run_until_complete(go())
+
+    def test_default_btype_list_buckets(self):
+        async def go():
+            default_btype = self.client.bucket_type('default')
+            bucket = default_btype.bucket(self.bucket_name)
+            obj = await bucket.new(self.key_name)
+            obj.data = [1, 2, 3]
+            await obj.store()
+
+            buckets = await default_btype.get_buckets()
+            self.assertIn(bucket, buckets)
+            self.assertCountEqual(buckets, await self.client.get_buckets())
+            # self.assertListEqual(buckets, await self.client.get_buckets())
+        self.loop.run_until_complete(go())
+
+    def test_default_btype_list_keys(self):
+        async def go():
+            btype = self.client.bucket_type('default')
+            bucket = btype.bucket(self.bucket_name)
+
+            obj = await bucket.new(self.key_name)
+            obj.data = [1, 2, 3]
+            await obj.store()
+
+            keys = await bucket.get_keys()
+            self.assertIn(self.key_name, keys)
+
+            oldapikeys = await self.client.get_keys(
+                self.client.bucket(self.bucket_name))
+            self.assertCountEqual(keys, oldapikeys)
         self.loop.run_until_complete(go())
