@@ -16,6 +16,7 @@ class IntegrationTest:
     def setUp(self):
         super().setUp()
         self.bucket_name = self.randname()
+        self.key_name = self.randname()
 
 
 class AsyncUnitTestCase(unittest.TestCase):

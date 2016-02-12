@@ -75,3 +75,14 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
             with self.assertRaises(RiakError):
                 await btype.set_property('datatype', 'counter')
         self.loop.run_until_complete(go())
+
+    def test_btype_list_buckets(self):
+        async def go():
+            btype = self.client.bucket_type('default')
+            bucket = btype.bucket(self.bucket_name)
+            obj = await bucket.new(self.key_name)
+            obj.data = [1, 2, 3]
+            await obj.store()
+
+            self.assertIn(bucket, await btype.get_buckets())
+        self.loop.run_until_complete(go())
