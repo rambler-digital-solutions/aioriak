@@ -10,7 +10,6 @@ from aioriak.error import RiakError
 
 
 MAX_CHUNK_SIZE = 65536
-MAX_CHUNK_SIZE = 1024
 
 logger = logging.getLogger('aioriak.transport')
 
