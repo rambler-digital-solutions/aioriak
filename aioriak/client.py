@@ -5,7 +5,7 @@ from .transport import create_transport
 from .bucket import BucketType, Bucket
 from riak.resolver import default_resolver
 from riak.util import bytes_to_str, str_to_bytes
-from riak.datatypes import TYPES
+from aioriak.datatypes import TYPES
 
 
 logger = logging.getLogger('aioriak.client')
@@ -288,3 +288,13 @@ class RiakClient:
         :type robj: RiakObject
         '''
         return await self._transport.put(robj)
+
+    async def update_datatype(self, datatype):
+        '''
+        Sends an update to a Riak Datatype to the server.
+        :param datatype: the datatype with pending updates
+        :type datatype: :class:`~aioriak.datatypes.Datatype`
+        :rtype: tuple of datatype, opaque value and opaque context
+        '''
+
+        return await self._transport.update_datatype(datatype)

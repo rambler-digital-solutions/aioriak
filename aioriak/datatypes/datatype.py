@@ -97,7 +97,6 @@ class Datatype:
         if not self.modified:
             raise ValueError("No operation to perform")
 
-        params.setdefault('return_body', True)
         await self.bucket._client.update_datatype(self, **params)
         self.clear()
 

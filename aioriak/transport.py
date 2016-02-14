@@ -319,6 +319,27 @@ class RiakPbcAsyncTransport:
             result[key.name] = value
         return result
 
+    def _encode_dt_op(self, dtype, req, op):
+        if dtype == 'counter':
+            req.op.counter_op.increment = op[1]
+        elif dtype == 'set':
+            self._encode_set_op(req.op, op)
+        elif dtype == 'map':
+            self._encode_map_op(req.op.map_op, op)
+        else:
+            raise TypeError("Cannot send operation on datatype {!r}".
+                            format(dtype))
+
+    def _encode_dt_options(self, req, params):
+        for q in ['r', 'pr', 'w', 'dw', 'pw']:
+            if q in params and params[q] is not None:
+                setattr(req, q, self._encode_quorum(params[q]))
+
+        for o in ['basic_quorum', 'notfound_ok', 'timeout', 'return_body',
+                  'include_context']:
+            if o in params and params[o] is not None:
+                setattr(req, o, params[o])
+
     def _decode_dt_fetch(self, resp):
         dtype = codec.DT_FETCH_TYPES.get(resp.type)
         if dtype is None:
@@ -725,3 +746,40 @@ class RiakPbcAsyncTransport:
             raise RiakError("missing response object")
 
         return robj
+
+    async def update_datatype(self, datatype, **options):
+
+        if datatype.bucket.bucket_type.is_default():
+            raise NotImplementedError("Datatypes cannot be used in the default"
+                                      " bucket-type.")
+
+        op = datatype.to_op()
+        type_name = datatype.type_name
+        if not op:
+            raise ValueError("No operation to send on datatype {!r}".
+                             format(datatype))
+
+        req = riak_pb.DtUpdateReq()
+        req.bucket = str_to_bytes(datatype.bucket.name)
+        req.type = str_to_bytes(datatype.bucket.bucket_type.name)
+
+        if datatype.key:
+            req.key = str_to_bytes(datatype.key)
+        if datatype._context:
+            req.context = datatype._context
+
+        self._encode_dt_options(req, options)
+
+        self._encode_dt_op(type_name, req, op)
+
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_DT_UPDATE_REQ, req,
+            messages.MSG_CODE_DT_UPDATE_RESP)
+        if resp.HasField('key'):
+            datatype.key = resp.key[:]
+        if resp.HasField('context'):
+            datatype._context = resp.context[:]
+
+        datatype._set_value(self._decode_dt_value(type_name, resp))
+
+        return True
