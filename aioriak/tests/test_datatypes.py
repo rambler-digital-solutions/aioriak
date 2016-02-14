@@ -64,6 +64,7 @@ class DatatypeIntegrationTests(IntegrationTest,
 
             othercount = await bucket.get(self.key_name)
             self.assertEqual(5, othercount.value)
+            print(type(mycount), type(othercount))
 
             othercount.decrement(3)
             await othercount.store()
