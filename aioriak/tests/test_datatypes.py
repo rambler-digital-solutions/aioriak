@@ -2,6 +2,7 @@ import unittest
 from aioriak.bucket import Bucket, BucketType
 from aioriak import datatypes
 from aioriak.tests.base import IntegrationTest, AsyncUnitTestCase
+from aioriak import error
 
 
 class DatatypeUnitTestBase:
@@ -52,6 +53,35 @@ class CounterUnitTests(DatatypeUnitTestBase, unittest.TestCase):
         self.assertEqual(('increment', 5), op)
 
 
+class FlagUnitTests(DatatypeUnitTestBase, unittest.TestCase):
+    dtype = datatypes.Flag
+
+    def op(self, dtype):
+        dtype.enable()
+
+    def check_op_output(self, op):
+        self.assertEqual('enable', op)
+
+    def test_disables_require_context(self):
+        dtype = self.dtype(self.bucket, 'key')
+        with self.assertRaises(error.ContextRequired):
+            dtype.disable()
+
+        dtype._context = 'blah'
+        dtype.disable()
+        self.assertTrue(dtype.modified)
+
+
+class RegisterUnitTests(DatatypeUnitTestBase, unittest.TestCase):
+    dtype = datatypes.Register
+
+    def op(self, dtype):
+        dtype.assign('foobarbaz')
+
+    def check_op_output(self, op):
+        self.assertEqual(('assign', 'foobarbaz'), op)
+
+
 class DatatypeIntegrationTests(IntegrationTest,
                                AsyncUnitTestCase):
     def test_dt_counter(self):
@@ -64,7 +94,6 @@ class DatatypeIntegrationTests(IntegrationTest,
 
             othercount = await bucket.get(self.key_name)
             self.assertEqual(5, othercount.value)
-            print(type(mycount), type(othercount))
 
             othercount.decrement(3)
             await othercount.store()

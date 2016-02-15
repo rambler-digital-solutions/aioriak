@@ -1,4 +1,5 @@
 from . import TYPES
+from aioriak.error import ContextRequired
 
 
 class Datatype:
@@ -156,3 +157,10 @@ class Datatype:
         their own setup without overriding the constructor.
         '''
         pass
+
+    def _require_context(self):
+        '''
+        Raises an exception if the context is not present
+        '''
+        if not self._context:
+            raise ContextRequired()

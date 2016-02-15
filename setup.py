@@ -17,4 +17,5 @@ setup(
         'python3-riak-pb==2.1.0.6',
         'riak==2.3.0',
     ],
+    tests_require=['nose==1.3.7']
 )
