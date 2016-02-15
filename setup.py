@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from commands import docker_build, docker_start, docker_stop
 
 setup(
     name='aioriak',
@@ -17,5 +18,11 @@ setup(
         'python3-riak-pb==2.1.0.6',
         'riak==2.3.0',
     ],
-    tests_require=['nose==1.3.7']
+    tests_require=['nose==1.3.7',
+                   'coverage==4.0.3'],
+    cmdclass={
+        'docker_build': docker_build,
+        'docker_start': docker_start,
+        'docker_stop': docker_stop
+    }
 )
