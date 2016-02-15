@@ -2,11 +2,10 @@ language: python
 services:
 - riak
 python:
-- '3.4'
 - '3.5'
 
 install:
 - python setup.py develop
 
 script:
-  - python setup.py test
+    - nosetests 
