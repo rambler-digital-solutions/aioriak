@@ -78,7 +78,7 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
 
     def test_btype_list_buckets(self):
         async def go():
-            btype = self.client.bucket_type('py-test')
+            btype = self.client.bucket_type('pytest')
             bucket = btype.bucket(self.bucket_name)
             obj = await bucket.new(self.key_name)
             obj.data = [1, 2, 3]
@@ -89,7 +89,7 @@ class BucketTypeTests(IntegrationTest, AsyncUnitTestCase):
 
     def test_btype_list_keys(self):
         async def go():
-            btype = self.client.bucket_type('py-test')
+            btype = self.client.bucket_type('pytest')
             bucket = btype.bucket(self.bucket_name)
 
             obj = await bucket.new(self.key_name)

@@ -1,12 +1,25 @@
 language: python
+
+sudo: required
+
 services:
 - riak
+
+before_install:
+- sudo riak-admin create pytest '{"props": {"allow_mult": "False"}}'
+- sudo riak-admin activate pytest
+- sudo riak-admin bucket-type create pytest-counters '{"props": {"datatype": "counter"}}'
+- sudo riak-admin activate pytest-counters
+- sudo riak-admin bucket-type create pytest-maps '{"props": {"datatype": "map"}}'
+- sudo riak-admin activate pytest-maps
+- sudo riak-admin bucket-type create pytest-sets '{"props": {"datatype": "set"}}'
+- sudo riak-admin activate pytest-sets
+
 python:
-- '3.4'
 - '3.5'
 
 install:
 - python setup.py develop
 
 script:
-  - python setup.py test
+- nosetests 
