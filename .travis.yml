@@ -23,7 +23,7 @@ install:
   - pip install coveralls
 
 script:
-  - coverage run --source=aioriak setup.py test
+  - nosetests -v
 
 after_success:
   - coveralls
