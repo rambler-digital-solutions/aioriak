@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
-from commands import docker_build, docker_start, docker_stop
+from commands import docker_build, docker_start, docker_stop, setup_riak
 
 setup(
     name='aioriak',
     version='0.0.1',
-    description='Async implementation of python client for Riak DB',
+    description='Async implementation of Riak DB python client',
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
     long_description='',
@@ -23,6 +23,7 @@ setup(
     cmdclass={
         'docker_build': docker_build,
         'docker_start': docker_start,
-        'docker_stop': docker_stop
+        'docker_stop': docker_stop,
+        'setup_riak': setup_riak
     }
 )

@@ -2,6 +2,7 @@ from distutils.core import Command
 from subprocess import Popen, PIPE, call
 import os
 import time
+import json
 
 
 # Exception classes used by this module.
@@ -50,6 +51,11 @@ def check_output(*popenargs, **kwargs):
             cmd = popenargs[0]
         raise CalledProcessError(retcode, cmd, output=output)
     return output
+
+
+def get_node_ip(node='riak01'):
+    state = json.loads(check_output(['docker', 'inspect', node]).decode())
+    return state[0]['NetworkSettings']['IPAddress']
 
 
 class docker:
@@ -119,3 +125,22 @@ class docker_stop(Command, docker):
         args = ['make', '-C', self.docker_submodule_path, 'stop-cluster']
         retcode = call(args)
         self._check_retcode(retcode, args)
+
+
+class setup_riak(Command, docker):
+    user_options = []
+    description = 'Setup riak cluster'
+    verbose = False
+
+    def initialize_options(self):
+        self.verbose = bool(int(os.environ.get('VERBOSE', 0)))
+        self.use_docker = bool(int(os.environ.get('RIAK_CLUSTER', 0)))
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        if self.use_docker:
+            print('init riak docker cluster')
+        else:
+            print('setup riak instance')
