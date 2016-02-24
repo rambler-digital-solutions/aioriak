@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 from commands import (docker_build, docker_start, docker_stop, setup_riak,
-                      create_bucket_types)
+                      create_bucket_types, Test)
 
 setup(
     name='aioriak',
@@ -22,10 +22,11 @@ setup(
     tests_require=['nose==1.3.7',
                    'coverage==4.0.3'],
     cmdclass={
+        'test': Test,
         'docker_build': docker_build,
         'docker_start': docker_start,
         'docker_stop': docker_stop,
         'setup_riak': setup_riak,
-        'create_bucket_types': create_bucket_types
+        'create_bucket_types': create_bucket_types,
     }
 )

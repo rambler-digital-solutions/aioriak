@@ -1,8 +1,10 @@
 from distutils.core import Command
+from setuptools.command.test import test as TestCommand
 from distutils.errors import DistutilsOptionError
 from distutils import log
 from subprocess import Popen, PIPE, call
 import os
+import sys
 import time
 import json
 
@@ -60,8 +62,11 @@ def get_node_ip(node='riak01'):
     return state[0]['NetworkSettings']['IPAddress']
 
 
-class docker:
+class docker(object):
     docker_submodule_path = 'aioriak/tests/docker'
+
+    def use_docker(self):
+        return bool(int(os.environ.get('DOCKER_CLUSTER', 0)))
 
     def _check_retcode(self, retcode, args):
         if retcode:
@@ -69,6 +74,9 @@ class docker:
             raise CalledProcessError(retcode, cmd)
         else:
             return True
+
+    def cluster_is_started(self, node='riak01'):
+        return node in check_output(['docker', 'ps']).decode()
 
 
 class docker_build(Command, docker):
@@ -101,7 +109,6 @@ class docker_start(Command, docker):
         os.environ['DOCKER_RIAK_AUTOMATIC_CLUSTERING'] = '1'
         os.environ['DOCKER_RIAK_CLUSTER_SIZE'] = '3'
         os.environ['DOCKER_RIAK_BACKEND'] = 'memory'
-        os.environ['RIAK_VERSION'] = '2.1.3-1'
 
     def finalize_options(self):
         pass
@@ -125,9 +132,10 @@ class docker_stop(Command, docker):
         pass
 
     def run(self):
-        args = ['make', '-C', self.docker_submodule_path, 'stop-cluster']
-        retcode = call(args)
-        self._check_retcode(retcode, args)
+        if self.use_docker() and self.cluster_is_started():
+            args = ['make', '-C', self.docker_submodule_path, 'stop-cluster']
+            retcode = call(args)
+            self._check_retcode(retcode, args)
 
 
 class create_bucket_types(Command):
@@ -211,31 +219,47 @@ class setup_riak(Command, docker):
     description = 'Setup riak cluster'
     verbose = False
 
-    user_options = [
-        ('riak-admin=', None, 'path to the riak-admin script')
-    ]
+    user_options = []
+
+    def get_riak_admin(self):
+        return os.environ.get('RIAK_ADMIN', None)
 
     def initialize_options(self):
         self.verbose = bool(int(os.environ.get('VERBOSE', 0)))
-        self.use_docker = bool(int(os.environ.get('RIAK_CLUSTER', 0)))
-        self.riak_admin = None
+        self.riak_admin = self.get_riak_admin()
 
     def finalize_options(self):
-        pass
+        if self.riak_admin is None and not self.use_docker():
+            raise DistutilsOptionError("riak-admin option not set")
+        if self.use_docker():
+            self.riak_admin = ['docker', 'exec', '-i', '-t', 'riak01',
+                               'riak-admin']
+        else:
+            self.riak_admin = self.riak_admin.split()
 
     def run(self):
         bucket = self.distribution.get_command_obj('create_bucket_types')
-        if self.use_docker:
-            print('init riak docker cluster')
-            bucket.riak_admin = ['docker', 'exec', '-i', '-t', 'riak01',
-                                 'riak-admin']
-        else:
-            bucket.riak_admin = self.riak_admin
-            print('setup riak instance')
+        bucket.riak_admin = self.riak_admin
 
         for cmd_name in self.get_sub_commands():
             self.run_command(cmd_name)
 
-    sub_commands = [('docker_build', lambda self: self.use_docker),
-                    ('docker_start', lambda self: self.use_docker),
-                    ('create_bucket_types', None)]
+    sub_commands = [
+        ('docker_build', lambda self: self.use_docker()),
+        ('docker_start',
+         lambda self: self.use_docker() and not self.cluster_is_started()),
+        ('create_bucket_types', None)]
+
+
+class Test(TestCommand, docker):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        import nose
+        result = nose.run(argv=['nosetests'])
+        if self.use_docker():
+            self.run_command('docker_stop')
+        sys.exit(result)
