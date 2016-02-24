@@ -1,3 +1,0 @@
-[submodule "aioriak/tests/docker"]
-	path = aioriak/tests/docker
-	url = https://github.com/hectcastro/docker-riak.git
