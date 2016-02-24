@@ -6,14 +6,8 @@ services:
   - riak
 
 before_install:
-  - "sudo riak-admin bucket-type create pytest '{\"props\": {\"allow_mult\": \"False\"}}'"
-  - "sudo riak-admin bucket-type activate pytest"
-  - "sudo riak-admin bucket-type create pytest-counters '{\"props\": {\"datatype\": \"counter\"}}'"
-  - "sudo riak-admin bucket-type activate pytest-counters"
-  - "sudo riak-admin bucket-type create pytest-maps '{\"props\": {\"datatype\": \"map\"}}'"
-  - "sudo riak-admin bucket-type activate pytest-maps"
-  - "sudo riak-admin bucket-type create pytest-sets '{\"props\": {\"datatype\": \"set\"}}'"
-  - "sudo riak-admin bucket-type activate pytest-sets"
+  - export RIAK_ADMIN="riak-admin"
+  - sudo python setup.py setup_riak
 
 python:
   - '3.5'
