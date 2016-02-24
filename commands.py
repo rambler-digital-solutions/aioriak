@@ -1,4 +1,6 @@
 from distutils.core import Command
+from distutils.errors import DistutilsOptionError
+from distutils import log
 from subprocess import Popen, PIPE, call
 import os
 import time
@@ -97,8 +99,9 @@ class docker_start(Command, docker):
     def initialize_options(self):
         self.verbose = bool(int(os.environ.get('VERBOSE', 0)))
         os.environ['DOCKER_RIAK_AUTOMATIC_CLUSTERING'] = '1'
-        os.environ['DOCKER_RIAK_CLUSTER_SIZE'] = '5'
+        os.environ['DOCKER_RIAK_CLUSTER_SIZE'] = '3'
         os.environ['DOCKER_RIAK_BACKEND'] = 'memory'
+        os.environ['RIAK_VERSION'] = '2.1.3-1'
 
     def finalize_options(self):
         pass
@@ -107,7 +110,7 @@ class docker_start(Command, docker):
         args = ['make', '-C', self.docker_submodule_path, 'start-cluster']
         retcode = call(args)
         if self._check_retcode(retcode, args):
-            time.sleep(30)
+            time.sleep(3)
 
 
 class docker_stop(Command, docker):
@@ -127,20 +130,112 @@ class docker_stop(Command, docker):
         self._check_retcode(retcode, args)
 
 
+class create_bucket_types(Command):
+    '''
+    Creates bucket-types appropriate for testing. By default this will create:
+    * `pytest-maps` with ``{"datatype":"map"}``
+    * `pytest-sets` with ``{"datatype":"set"}``
+    * `pytest-counters` with ``{"datatype":"counter"}``
+    * `pytest-consistent` with ``{"consistent":true}``
+    * `pytest-write-once` with ``{"write_once": true}``
+    * `pytest-mr`
+    * `pytest` with ``{"allow_mult":false}``
+    '''
+
+    description = "create bucket-types used in integration tests"
+
+    user_options = [
+        ('riak-admin=', None, 'path to the riak-admin script')
+    ]
+
+    _props = {
+        'pytest-maps': {'datatype': 'map'},
+        'pytest-sets': {'datatype': 'set'},
+        'pytest-counters': {'datatype': 'counter'},
+        'pytest-consistent': {'consistent': True},
+        'pytest-write-once': {'write_once': True},
+        'pytest-mr': {},
+        'pytest': {'allow_mult': False}
+    }
+
+    def initialize_options(self):
+        self.riak_admin = None
+
+    def finalize_options(self):
+        if self.riak_admin is None:
+            raise DistutilsOptionError("riak-admin option not set")
+
+    def run(self):
+        for name in self._props:
+            self._create_and_activate_type(name, self._props[name])
+
+    def check_btype_command(self, *args):
+        cmd = self._btype_command(*args)
+        return check_output(cmd)
+
+    def _create_and_activate_type(self, name, props):
+        # Check status of bucket-type
+        exists = False
+        active = False
+        try:
+            status = self.check_btype_command('status', name)
+        except CalledProcessError as e:
+            status = e.output
+
+        exists = ('not an existing bucket type' not in status.decode('ascii'))
+        active = ('is active' in status.decode('ascii'))
+
+        if exists or active:
+            log.info('Update {} bucket-type'.format(name))
+            self.check_btype_command('update', name,
+                                     json.dumps({'props': props},
+                                                separators=(',', ':')))
+        else:
+            log.info('Create  {} bucket-type'.format(name))
+            self.check_btype_command('create', name,
+                                     json.dumps({'props': props},
+                                                separators=(',', ':')))
+
+        if not active:
+            log.info('Activate {} bucket-type'.format(name))
+            self.check_btype_command('activate', name)
+
+    def _btype_command(self, *args):
+        cmd = self.riak_admin + ['bucket-type']
+        cmd.extend(args)
+        return cmd
+
+
 class setup_riak(Command, docker):
     user_options = []
     description = 'Setup riak cluster'
     verbose = False
 
+    user_options = [
+        ('riak-admin=', None, 'path to the riak-admin script')
+    ]
+
     def initialize_options(self):
         self.verbose = bool(int(os.environ.get('VERBOSE', 0)))
         self.use_docker = bool(int(os.environ.get('RIAK_CLUSTER', 0)))
+        self.riak_admin = None
 
     def finalize_options(self):
         pass
 
     def run(self):
+        bucket = self.distribution.get_command_obj('create_bucket_types')
         if self.use_docker:
             print('init riak docker cluster')
+            bucket.riak_admin = ['docker', 'exec', '-i', '-t', 'riak01',
+                                 'riak-admin']
         else:
+            bucket.riak_admin = self.riak_admin
             print('setup riak instance')
+
+        for cmd_name in self.get_sub_commands():
+            self.run_command(cmd_name)
+
+    sub_commands = [('docker_build', lambda self: self.use_docker),
+                    ('docker_start', lambda self: self.use_docker),
+                    ('create_bucket_types', None)]
