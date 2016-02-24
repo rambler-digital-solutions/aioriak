@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/rambler-digital-solutions/aioriak.svg?branch=master)](https://travis-ci.org/rambler-digital-solutions/aioriak)
+[![Coverage Status](https://coveralls.io/repos/github/rambler-digital-solutions/aioriak/badge.svg?branch=master)](https://coveralls.io/github/rambler-digital-solutions/aioriak?branch=master)
 # Python asyncio client for Riak #
 
 ## Installation ##
