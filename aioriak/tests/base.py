@@ -13,6 +13,10 @@ class IntegrationTest:
             out += chr(random.randint(ord('a'), ord('z')))
         return out
 
+    @staticmethod
+    def randint():
+        return random.randint(1, 999999)
+
     def setUp(self):
         super().setUp()
         self.bucket_name = self.randname()

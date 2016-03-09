@@ -82,7 +82,7 @@ class Bucket:
         '''
         if await self.bucket_type.get_datatype():
             return await self._client.fetch_datatype(self, key)
-        from riak_object import RiakObject
+        from aioriak.riak_object import RiakObject
         obj = RiakObject(self._client, self, key)
         return await obj.reload()
 
