@@ -24,4 +24,11 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             self.assertEqual(obj.bucket.name, self.bucket_name)
             self.assertEqual(obj.key, 'foo')
             self.assertEqual(obj.data, rand)
+
+            obj2 = await bucket.new('baz', rand, 'application/json')
+            obj2.charset = 'UTF-8'
+            await obj2.store()
+            obj2 = await bucket.get('baz')
+            self.assertEqual(obj2.data, rand)
+
         self.loop.run_until_complete(go())
