@@ -41,3 +41,16 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             obj = await bucket.get('foo')
             self.assertEqual(obj.data, data)
         self.loop.run_until_complete(go())
+
+    def test_store_unicode_string(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            data = 'some unicode data: \u00c6'
+            obj = await bucket.new(self.key_name,
+                                   encoded_data=data.encode('utf-8'),
+                                   content_type='text/plain')
+            obj.charset = 'utf-8'
+            await obj.store()
+            obj2 = await bucket.get(self.key_name)
+            self.assertEqual(data, obj2.encoded_data.decode('utf-8'))
+        self.loop.run_until_complete(go())
