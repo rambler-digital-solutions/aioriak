@@ -30,5 +30,14 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             await obj2.store()
             obj2 = await bucket.get('baz')
             self.assertEqual(obj2.data, rand)
+        self.loop.run_until_complete(go())
 
+    def test_store_object_with_unicode(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            data = {'føø': u'éå'}
+            obj = await bucket.new('foo', data)
+            await obj.store()
+            obj = await bucket.get('foo')
+            self.assertEqual(obj.data, data)
         self.loop.run_until_complete(go())
