@@ -70,3 +70,19 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             self.client.bucket('føø')
             self.client.bucket('ASCII')
         self.loop.run_until_complete(go())
+
+    def test_generate_key(self):
+        async def go():
+            # Ensure that Riak generates a random key when
+            # the key passed to bucket.new() is None.
+            bucket = self.client.bucket('random_key_bucket')
+            existing_keys = await bucket.get_keys()
+            o = await bucket.new(None, data={})
+            self.assertIsNone(o.key)
+            await o.store()
+            self.assertIsNotNone(o.key)
+            self.assertNotIn('/', o.key)
+            self.assertNotIn(o.key, existing_keys)
+            self.assertEqual(len(await bucket.get_keys()),
+                             len(existing_keys) + 1)
+        self.loop.run_until_complete(go())
