@@ -19,13 +19,8 @@ class Bucket:
         :param bucket_type: The parent bucket type of this bucket
         :type bucket_type: :class:`BucketType`
         """
-        try:
-            if isinstance(name, str):
-                name = name.encode('ascii').decode()
-            else:
-                raise TypeError('Bucket name must be a string')
-        except UnicodeError:
-            raise TypeError('Unicode bucket names are not supported.')
+        if not isinstance(name, str):
+            raise TypeError('Bucket name must be a string')
 
         if not isinstance(bucket_type, BucketType):
             raise TypeError('Parent bucket type must be a BucketType instance')

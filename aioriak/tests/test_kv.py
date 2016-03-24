@@ -1,4 +1,5 @@
 from .base import IntegrationTest, AsyncUnitTestCase
+from aioriak.bucket import Bucket
 
 
 class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
@@ -53,4 +54,19 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             await obj.store()
             obj2 = await bucket.get(self.key_name)
             self.assertEqual(data, obj2.encoded_data.decode('utf-8'))
+        self.loop.run_until_complete(go())
+
+    def test_string_bucket_name(self):
+        async def go():
+            # Things that are not strings cannot be bucket names
+            for bad in (12345, True, None, {}, []):
+                with self.assertRaisesRegexp(
+                        TypeError, 'must be a string'):
+                    self.client.bucket(bad)
+
+                with self.assertRaisesRegexp(
+                        TypeError, 'must be a string'):
+                    Bucket(self.client, bad, None)
+            self.client.bucket('føø')
+            self.client.bucket('ASCII')
         self.loop.run_until_complete(go())
