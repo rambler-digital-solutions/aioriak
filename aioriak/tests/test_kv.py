@@ -260,25 +260,25 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
         async def go():
             bucket = self.client.bucket(testrun_props_bucket)
             # Test setting allow mult...
-            bucket.allow_mult = True
+            await bucket.set_property('allow_mult', True)
             # Test setting nval...
-            bucket.n_val = 1
+            await bucket.set_property('n_val', 1)
 
-            c2 = self.create_client()
+            c2 = await self.async_create_client()
             bucket2 = c2.bucket(testrun_props_bucket)
-            self.assertTrue(bucket2.allow_mult)
-            self.assertEqual(bucket2.n_val, 1)
+            self.assertTrue(await bucket2.get_property('allow_mult'))
+            self.assertEqual(await bucket2.get_property('n_val'), 1)
             # Test setting multiple properties...
             await bucket.set_properties({"allow_mult": False, "n_val": 2})
 
-            c3 = self.create_client()
+            c3 = await self.async_create_client()
             bucket3 = c3.bucket(testrun_props_bucket)
-            self.assertFalse(bucket3.allow_mult)
-            self.assertEqual(bucket3.n_val, 2)
+            self.assertFalse(await bucket3.get_property('allow_mult'))
+            self.assertEqual(await bucket3.get_property('n_val'), 2)
 
             # clean up!
-            await c2.close()
-            await c3.close()
+            c2.close()
+            c3.close()
         self.loop.run_until_complete(go())
 
     def test_if_none_match(self):

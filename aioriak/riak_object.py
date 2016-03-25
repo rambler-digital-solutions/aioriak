@@ -62,18 +62,22 @@ class RiakObject:
         await self.client.get(self)
         return self
 
-    async def store(self):
+    async def store(self, return_body=True):
         '''
         Store the object in Riak. When this operation completes, the
         object could contain new metadata and possibly new data if Riak
         contains a newer version of the object according to the object's
         vector clock.
+
+        :param return_body: if the newly stored object should be
+                            retrieved
+        :type return_body: bool
         :rtype: :class:`RiakObject` '''
         if len(self.siblings) != 1:
             raise ConflictError("Attempting to store an invalid object, "
                                 "resolve the siblings first")
 
-        await self.client.put(self)
+        await self.client.put(self, return_body)
 
         return self
 

@@ -31,6 +31,12 @@ class AsyncUnitTestCase(unittest.TestCase):
             RiakClient.create(host, port,
                               loop=self.loop, **client_args))
 
+    async def async_create_client(self, host=None, port=None, **client_args):
+        host = host or HOST
+        port = port or PORT
+        return await RiakClient.create(host, port, loop=self.loop,
+                                       **client_args)
+
     def setUp(self):
         super().setUp()
         self.loop = asyncio.new_event_loop()

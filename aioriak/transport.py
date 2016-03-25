@@ -57,7 +57,7 @@ class RPBPacketParser:
             self._msglen, = struct.unpack(
                 '!i', self._data[:self.HEADER_LENGTH])
             if self._msglen > 8192:
-                raise RiakError('Wrong MESSAGE_LEN %d', self._msglen)
+                raise RiakError('Wrong MESSAGE_LEN %d' % self._msglen)
             self._header_parsed = True
         else:
             self._header_parsed = False
@@ -564,6 +564,20 @@ class RiakPbcAsyncTransport:
 
         return self._decode_dt_fetch(resp)
 
+    async def get_bucket_props(self, bucket):
+        '''
+        Serialize bucket property request and deserialize response
+        '''
+        req = riak_pb.RpbGetBucketReq()
+        req.bucket = str_to_bytes(bucket.name)
+        self._add_bucket_type(req, bucket.bucket_type)
+
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_GET_BUCKET_REQ, req,
+            messages.MSG_CODE_GET_BUCKET_RESP)
+
+        return self._decode_bucket_props(resp.props)
+
     async def set_bucket_type_props(self, bucket_type, props):
         '''
         Set bucket-type properties
@@ -578,6 +592,21 @@ class RiakPbcAsyncTransport:
 
         msg_code, resp = await self._request(
             messages.MSG_CODE_SET_BUCKET_TYPE_REQ, req,
+            messages.MSG_CODE_SET_BUCKET_RESP)
+        return True
+
+    async def set_bucket_props(self, bucket, props):
+        '''
+        Serialize set bucket property request and deserialize response
+        '''
+        req = riak_pb.RpbSetBucketReq()
+        req.bucket = str_to_bytes(bucket.name)
+        self._add_bucket_type(req, bucket.bucket_type)
+
+        self._encode_bucket_props(props, req)
+
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_SET_BUCKET_REQ, req,
             messages.MSG_CODE_SET_BUCKET_RESP)
         return True
 
@@ -715,10 +744,13 @@ class RiakPbcAsyncTransport:
             robj.siblings = []
         return robj
 
-    async def put(self, robj):
+    async def put(self, robj, return_body=True):
         bucket = robj.bucket
 
         req = riak_pb.RpbPutReq()
+
+        if return_body:
+            req.return_body = 1
 
         req.bucket = str_to_bytes(bucket.name)
         self._add_bucket_type(req, bucket.bucket_type)

@@ -279,6 +279,31 @@ class RiakClient:
         '''
         return await self._transport.set_bucket_type_props(bucket_type, props)
 
+    async def get_bucket_props(self, bucket):
+        '''
+        get_bucket_props(bucket)
+        Fetches bucket properties for the given bucket.
+        .. note:: This request is automatically retried :attr:`retries`
+           times if it fails due to network error.
+        :param bucket: the bucket whose properties will be fetched
+        :type bucket: RiakBucket
+        :rtype: dict
+        '''
+        return await self._transport.get_bucket_props(bucket)
+
+    async def set_bucket_props(self, bucket, props):
+        '''
+        set_bucket_props(bucket, props)
+        Sets bucket properties for the given bucket.
+        .. note:: This request is automatically retried :attr:`retries`
+           times if it fails due to network error.
+        :param bucket: the bucket whose properties will be set
+        :type bucket: RiakBucket
+        :param props: the properties to set
+        :type props: dict
+        '''
+        return await self._transport.set_bucket_props(bucket, props)
+
     async def get_keys(self, bucket):
         '''
         get_keys(bucket)
@@ -304,14 +329,17 @@ class RiakClient:
 
         return await self._transport.get(robj)
 
-    async def put(self, robj):
+    async def put(self, robj, return_body):
         '''
         put(robj)
         Stores an object in the Riak cluster.
+        :param return_body: whether to return the resulting object
+            after the write
+        :type return_body: boolean
         :param robj: the object to store
         :type robj: RiakObject
         '''
-        return await self._transport.put(robj)
+        return await self._transport.put(robj, return_body=return_body)
 
     async def delete(self, robj):
         '''

@@ -84,6 +84,40 @@ class Bucket:
         self._decoders[content_type] = decoder
         return self
 
+    async def set_property(self, key, value):
+        '''
+        Set a bucket property.
+        :param key: Property to set.
+        :type key: string
+        :param value: Property value.
+        :type value: mixed
+        '''
+        return await self.set_properties({key: value})
+
+    async def get_property(self, key):
+        '''
+        Retrieve a bucket property.
+        :param key: The property to retrieve.
+        :type key: string
+        :rtype: mixed
+        '''
+        return (await self.get_properties())[key]
+
+    async def set_properties(self, props):
+        '''
+        Set multiple bucket properties in one call.
+        :param props: A dictionary of properties
+        :type props: dict
+        '''
+        await self._client.set_bucket_props(self, props)
+
+    async def get_properties(self):
+        '''
+        Retrieve a dict of all bucket properties.
+        :rtype: dict
+        '''
+        return await self._client.get_bucket_props(self)
+
     async def get_keys(self):
         """
         Return all keys within the bucket.
