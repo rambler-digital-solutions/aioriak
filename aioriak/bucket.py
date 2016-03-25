@@ -19,13 +19,8 @@ class Bucket:
         :param bucket_type: The parent bucket type of this bucket
         :type bucket_type: :class:`BucketType`
         """
-        try:
-            if isinstance(name, str):
-                name = name.encode('ascii').decode()
-            else:
-                raise TypeError('Bucket name must be a string')
-        except UnicodeError:
-            raise TypeError('Unicode bucket names are not supported.')
+        if not isinstance(name, str):
+            raise TypeError('Bucket name must be a string')
 
         if not isinstance(bucket_type, BucketType):
             raise TypeError('Parent bucket type must be a BucketType instance')
@@ -82,7 +77,7 @@ class Bucket:
         '''
         if await self.bucket_type.get_datatype():
             return await self._client.fetch_datatype(self, key)
-        from riak_object import RiakObject
+        from aioriak.riak_object import RiakObject
         obj = RiakObject(self._client, self, key)
         return await obj.reload()
 
@@ -127,6 +122,16 @@ class Bucket:
         if encoded_data is not None:
             obj.encoded_data = encoded_data
         return obj
+
+    async def delete(self, key, **kwargs):
+        '''Deletes a key from Riak. Short hand for
+        ``bucket.new(key).delete()``. See :meth:`RiakClient.delete()
+        <riak.client.RiakClient.delete>` for options.
+        :param key: The key for the object
+        :type key: string
+        :rtype: RiakObject
+        '''
+        return await (await self.new(key)).delete(**kwargs)
 
     def __repr__(self):
         if self.bucket_type.is_default():

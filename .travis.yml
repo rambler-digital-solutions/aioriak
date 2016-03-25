@@ -10,7 +10,8 @@ before_install:
   - sudo python setup.py setup_riak
 
 python:
-  - '3.5'
+  - '3.5.0'
+  - '3.5.1'
 
 install:
   - python setup.py develop

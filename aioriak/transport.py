@@ -185,7 +185,7 @@ class RiakPbcAsyncTransport:
         if robj.content_type:
             rpb_content.content_type = robj.content_type.encode()
         if robj.charset:
-            rpb_content.charset = robj.charset
+            rpb_content.charset = robj.charset.encode()
         if robj.content_encoding:
             rpb_content.content_encoding = robj.content_encoding
         for uk in robj.usermeta:
@@ -746,6 +746,19 @@ class RiakPbcAsyncTransport:
             raise RiakError("missing response object")
 
         return robj
+
+    async def delete(self, robj):
+        req = riak_pb.RpbDelReq()
+
+        bucket = robj.bucket
+        req.bucket = str_to_bytes(bucket.name)
+        self._add_bucket_type(req, bucket.bucket_type)
+        req.key = str_to_bytes(robj.key)
+
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_DEL_REQ, req,
+            messages.MSG_CODE_DEL_RESP)
+        return self
 
     async def update_datatype(self, datatype, **options):
 

@@ -289,6 +289,16 @@ class RiakClient:
         '''
         return await self._transport.put(robj)
 
+    async def delete(self, robj):
+        '''
+        delete(robj, rw=None, r=None, w=None, dw=None, pr=None, pw=None,\
+               timeout=None)
+        Deletes an object from Riak.
+        :param robj: the object to delete
+        :type robj: RiakObject
+        '''
+        return await self._transport.delete(robj)
+
     async def update_datatype(self, datatype):
         '''
         Sends an update to a Riak Datatype to the server.
