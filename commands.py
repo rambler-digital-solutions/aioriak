@@ -262,4 +262,4 @@ class Test(TestCommand, docker):
         result = nose.run(argv=['nosetests'])
         if self.use_docker():
             self.run_command('docker_stop')
-        sys.exit(result)
+        sys.exit(not result)
