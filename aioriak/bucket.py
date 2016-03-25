@@ -19,13 +19,8 @@ class Bucket:
         :param bucket_type: The parent bucket type of this bucket
         :type bucket_type: :class:`BucketType`
         """
-        try:
-            if isinstance(name, str):
-                name = name.encode('ascii').decode()
-            else:
-                raise TypeError('Bucket name must be a string')
-        except UnicodeError:
-            raise TypeError('Unicode bucket names are not supported.')
+        if not isinstance(name, str):
+            raise TypeError('Bucket name must be a string')
 
         if not isinstance(bucket_type, BucketType):
             raise TypeError('Parent bucket type must be a BucketType instance')
@@ -63,6 +58,66 @@ class Bucket:
         else:
             return self._client.get_encoder(content_type)
 
+    def set_encoder(self, content_type, encoder):
+        '''
+        Set the encoding function for the provided content type for
+        this bucket.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param encoder: an encoding function, takes a single object
+            argument and returns a string data as single argument.
+        :type encoder: function
+        '''
+        self._encoders[content_type] = encoder
+        return self
+
+    def set_decoder(self, content_type, decoder):
+        '''
+        Set the decoding function for the provided content type for
+        this bucket.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param decoder: a decoding function, takes a string and
+            returns a Python type
+        :type decoder: function
+        '''
+        self._decoders[content_type] = decoder
+        return self
+
+    async def set_property(self, key, value):
+        '''
+        Set a bucket property.
+        :param key: Property to set.
+        :type key: string
+        :param value: Property value.
+        :type value: mixed
+        '''
+        return await self.set_properties({key: value})
+
+    async def get_property(self, key):
+        '''
+        Retrieve a bucket property.
+        :param key: The property to retrieve.
+        :type key: string
+        :rtype: mixed
+        '''
+        return (await self.get_properties())[key]
+
+    async def set_properties(self, props):
+        '''
+        Set multiple bucket properties in one call.
+        :param props: A dictionary of properties
+        :type props: dict
+        '''
+        await self._client.set_bucket_props(self, props)
+
+    async def get_properties(self):
+        '''
+        Retrieve a dict of all bucket properties.
+        :rtype: dict
+        '''
+        return await self._client.get_bucket_props(self)
+
     async def get_keys(self):
         """
         Return all keys within the bucket.
@@ -82,7 +137,7 @@ class Bucket:
         '''
         if await self.bucket_type.get_datatype():
             return await self._client.fetch_datatype(self, key)
-        from riak_object import RiakObject
+        from aioriak.riak_object import RiakObject
         obj = RiakObject(self._client, self, key)
         return await obj.reload()
 
@@ -127,6 +182,16 @@ class Bucket:
         if encoded_data is not None:
             obj.encoded_data = encoded_data
         return obj
+
+    async def delete(self, key, **kwargs):
+        '''Deletes a key from Riak. Short hand for
+        ``bucket.new(key).delete()``. See :meth:`RiakClient.delete()
+        <riak.client.RiakClient.delete>` for options.
+        :param key: The key for the object
+        :type key: string
+        :rtype: RiakObject
+        '''
+        return await (await self.new(key)).delete(**kwargs)
 
     def __repr__(self):
         if self.bucket_type.is_default():

@@ -1,16 +1,19 @@
 language: python
-sudo: required
 # dist: trusty  # have no preinstalled riak service
+sudo: false
 
 services:
-  - riak
+  - docker
 
 before_install:
-  - export RIAK_ADMIN="riak-admin"
-  - sudo python setup.py setup_riak
+  # - export RIAK_ADMIN="riak-admin"
+  - export DOCKER_HOST=tcp://0.0.0.0:2375
+  - export DOCKER_CLUSTER=1
+  - python setup.py setup_riak
 
 python:
-  - '3.5'
+  - '3.5.0'
+  - '3.5.1'
 
 install:
   - python setup.py develop

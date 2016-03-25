@@ -13,6 +13,10 @@ class IntegrationTest:
             out += chr(random.randint(ord('a'), ord('z')))
         return out
 
+    @staticmethod
+    def randint():
+        return random.randint(1, 999999)
+
     def setUp(self):
         super().setUp()
         self.bucket_name = self.randname()
@@ -26,6 +30,12 @@ class AsyncUnitTestCase(unittest.TestCase):
         return self.loop.run_until_complete(
             RiakClient.create(host, port,
                               loop=self.loop, **client_args))
+
+    async def async_create_client(self, host=None, port=None, **client_args):
+        host = host or HOST
+        port = port or PORT
+        return await RiakClient.create(host, port, loop=self.loop,
+                                       **client_args)
 
     def setUp(self):
         super().setUp()

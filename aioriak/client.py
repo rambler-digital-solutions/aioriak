@@ -84,6 +84,28 @@ class RiakClient:
         '''
         return self._encoders.get(content_type)
 
+    def set_encoder(self, content_type, encoder):
+        '''
+        Set the encoding function for the provided content type.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param encoder: an encoding function, takes a single object
+            argument and returns encoded data
+        :type encoder: function
+        '''
+        self._encoders[content_type] = encoder
+
+    def set_decoder(self, content_type, decoder):
+        '''
+        Set the decoding function for the provided content type.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param decoder: a decoding function, takes encoded data and
+            returns a Python type
+        :type decoder: function
+        '''
+        self._decoders[content_type] = decoder
+
     def _get_resolver(self):
         return self._resolver or default_resolver
 
@@ -155,6 +177,8 @@ class RiakClient:
         :rtype: boolean
         '''
         return await self._transport.ping()
+
+    is_alive = ping
 
     async def get_client_id(self):
         'Client ID for this RiakClient instance'
@@ -255,6 +279,31 @@ class RiakClient:
         '''
         return await self._transport.set_bucket_type_props(bucket_type, props)
 
+    async def get_bucket_props(self, bucket):
+        '''
+        get_bucket_props(bucket)
+        Fetches bucket properties for the given bucket.
+        .. note:: This request is automatically retried :attr:`retries`
+           times if it fails due to network error.
+        :param bucket: the bucket whose properties will be fetched
+        :type bucket: RiakBucket
+        :rtype: dict
+        '''
+        return await self._transport.get_bucket_props(bucket)
+
+    async def set_bucket_props(self, bucket, props):
+        '''
+        set_bucket_props(bucket, props)
+        Sets bucket properties for the given bucket.
+        .. note:: This request is automatically retried :attr:`retries`
+           times if it fails due to network error.
+        :param bucket: the bucket whose properties will be set
+        :type bucket: RiakBucket
+        :param props: the properties to set
+        :type props: dict
+        '''
+        return await self._transport.set_bucket_props(bucket, props)
+
     async def get_keys(self, bucket):
         '''
         get_keys(bucket)
@@ -280,14 +329,27 @@ class RiakClient:
 
         return await self._transport.get(robj)
 
-    async def put(self, robj):
+    async def put(self, robj, return_body):
         '''
         put(robj)
         Stores an object in the Riak cluster.
+        :param return_body: whether to return the resulting object
+            after the write
+        :type return_body: boolean
         :param robj: the object to store
         :type robj: RiakObject
         '''
-        return await self._transport.put(robj)
+        return await self._transport.put(robj, return_body=return_body)
+
+    async def delete(self, robj):
+        '''
+        delete(robj, rw=None, r=None, w=None, dw=None, pr=None, pw=None,\
+               timeout=None)
+        Deletes an object from Riak.
+        :param robj: the object to delete
+        :type robj: RiakObject
+        '''
+        return await self._transport.delete(robj)
 
     async def update_datatype(self, datatype):
         '''

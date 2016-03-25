@@ -32,6 +32,22 @@ class RiakObject:
         self.siblings = [RiakContent(self)]
         self._resolver = None
 
+    def _exists(self):
+        if len(self.siblings) == 0:
+            return False
+        elif len(self.siblings) > 1:
+            # Even if all of the siblings are tombstones, the object
+            # essentially exists.
+            return True
+        else:
+            return self.siblings[0].exists
+
+    exists = property(_exists, None, doc='''
+        Whether the object exists. This is only ``False`` when there
+        are no siblings (the object was not found), or the solitary
+        sibling is a tombstone.
+        ''')
+
     async def reload(self):
         '''
         Reload the object from Riak. When this operation completes, the
@@ -46,19 +62,41 @@ class RiakObject:
         await self.client.get(self)
         return self
 
-    async def store(self):
+    async def store(self, return_body=True):
         '''
         Store the object in Riak. When this operation completes, the
         object could contain new metadata and possibly new data if Riak
         contains a newer version of the object according to the object's
         vector clock.
+
+        :param return_body: if the newly stored object should be
+                            retrieved
+        :type return_body: bool
         :rtype: :class:`RiakObject` '''
         if len(self.siblings) != 1:
             raise ConflictError("Attempting to store an invalid object, "
                                 "resolve the siblings first")
 
-        await self.client.put(self)
+        await self.client.put(self, return_body)
 
+        return self
+
+    async def delete(self):
+        '''
+        Delete this object from Riak.
+        :rtype: :class:`RiakObject`
+        '''
+
+        await self.client.delete(self)
+        self.clear()
+        return self
+
+    def clear(self):
+        '''
+        Reset this object.
+        :rtype: RiakObject
+        '''
+        self.siblings = []
         return self
 
     data = content_property('data', doc='''
@@ -93,6 +131,10 @@ class RiakObject:
     links = content_property('links', doc='''
         A set of bucket/key/tag 3-tuples representing links to other
         keys.
+        ''')
+
+    content_type = content_property('content_type', doc='''
+        The MIME media type of the encoded data as a string
         ''')
 
     indexes = content_property('indexes', doc='''
