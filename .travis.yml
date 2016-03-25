@@ -7,6 +7,7 @@ services:
 
 before_install:
   # - export RIAK_ADMIN="riak-admin"
+  - export DOCKER_HOST=tcp://0.0.0.0:2375
   - export DOCKER_CLUSTER=1
   - python setup.py setup_riak
 
