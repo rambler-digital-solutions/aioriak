@@ -796,4 +796,3 @@ class RiakPbcAsyncTransport:
         datatype._set_value(self._decode_dt_value(type_name, resp))
 
         return True
-
