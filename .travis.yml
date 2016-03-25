@@ -3,10 +3,11 @@ language: python
 sudo: false
 
 services:
-  - riak
+  - docker
 
 before_install:
-  - export RIAK_ADMIN="riak-admin"
+  # - export RIAK_ADMIN="riak-admin"
+  - export DOCKER_CLUSTER=1
   - python setup.py setup_riak
 
 python:
@@ -18,7 +19,7 @@ install:
   - pip install coveralls
 
 script:
-  - nosetests -v
+  - python setup.py test
 
 after_success:
   - coveralls
