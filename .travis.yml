@@ -6,7 +6,6 @@ services:
   - riak
 
 before_install:
-  - 'ulimit -n 2048'
   - export RIAK_ADMIN="riak-admin"
   - python setup.py setup_riak
 
