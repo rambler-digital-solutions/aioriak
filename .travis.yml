@@ -1,13 +1,14 @@
 language: python
-sudo: required
 # dist: trusty  # have no preinstalled riak service
+sudo: false
 
 services:
   - riak
 
 before_install:
+  - 'ulimit -n 2048'
   - export RIAK_ADMIN="riak-admin"
-  - sudo python setup.py setup_riak
+  - python setup.py setup_riak
 
 python:
   - '3.5.0'
