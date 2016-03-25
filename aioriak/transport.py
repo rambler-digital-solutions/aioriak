@@ -747,6 +747,19 @@ class RiakPbcAsyncTransport:
 
         return robj
 
+    async def delete(self, robj):
+        req = riak_pb.RpbDelReq()
+
+        bucket = robj.bucket
+        req.bucket = str_to_bytes(bucket.name)
+        self._add_bucket_type(req, bucket.bucket_type)
+        req.key = str_to_bytes(robj.key)
+
+        msg_code, resp = await self._request(
+            messages.MSG_CODE_DEL_REQ, req,
+            messages.MSG_CODE_DEL_RESP)
+        return self
+
     async def update_datatype(self, datatype, **options):
 
         if datatype.bucket.bucket_type.is_default():
@@ -783,3 +796,4 @@ class RiakPbcAsyncTransport:
         datatype._set_value(self._decode_dt_value(type_name, resp))
 
         return True
+

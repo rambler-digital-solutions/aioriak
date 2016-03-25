@@ -123,6 +123,16 @@ class Bucket:
             obj.encoded_data = encoded_data
         return obj
 
+    async def delete(self, key, **kwargs):
+        '''Deletes a key from Riak. Short hand for
+        ``bucket.new(key).delete()``. See :meth:`RiakClient.delete()
+        <riak.client.RiakClient.delete>` for options.
+        :param key: The key for the object
+        :type key: string
+        :rtype: RiakObject
+        '''
+        return await (await self.new(key)).delete(**kwargs)
+
     def __repr__(self):
         if self.bucket_type.is_default():
             return '<RiakBucket {}>'.format(self.name)
