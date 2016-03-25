@@ -503,13 +503,11 @@ class RiakPbcAsyncTransport:
     def close(self):
         self._writer.close()
 
-    async def ping(self, error=False):
-        if error:
-            _, response = await self._request(messages.MSG_CODE_PING_RESP)
-        else:
-            _, response = await self._request(
-                messages.MSG_CODE_PING_REQ, expect=messages.MSG_CODE_PING_RESP)
-        return response
+    async def ping(self):
+        code, res = await self._request(messages.MSG_CODE_PING_REQ)
+        if code == messages.MSG_CODE_PING_RESP:
+            return True
+        return False
 
     async def get_server_info(self):
         _, res = await self._request(

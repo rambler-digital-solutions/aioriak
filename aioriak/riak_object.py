@@ -129,6 +129,10 @@ class RiakObject:
         keys.
         ''')
 
+    content_type = content_property('content_type', doc='''
+        The MIME media type of the encoded data as a string
+        ''')
+
     indexes = content_property('indexes', doc='''
         The set of secondary index entries, consisting of
         index-name/value tuples

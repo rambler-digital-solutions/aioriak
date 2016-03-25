@@ -84,6 +84,28 @@ class RiakClient:
         '''
         return self._encoders.get(content_type)
 
+    def set_encoder(self, content_type, encoder):
+        '''
+        Set the encoding function for the provided content type.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param encoder: an encoding function, takes a single object
+            argument and returns encoded data
+        :type encoder: function
+        '''
+        self._encoders[content_type] = encoder
+
+    def set_decoder(self, content_type, decoder):
+        '''
+        Set the decoding function for the provided content type.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param decoder: a decoding function, takes encoded data and
+            returns a Python type
+        :type decoder: function
+        '''
+        self._decoders[content_type] = decoder
+
     def _get_resolver(self):
         return self._resolver or default_resolver
 
@@ -155,6 +177,8 @@ class RiakClient:
         :rtype: boolean
         '''
         return await self._transport.ping()
+
+    is_alive = ping
 
     async def get_client_id(self):
         'Client ID for this RiakClient instance'

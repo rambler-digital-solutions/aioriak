@@ -41,7 +41,9 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
         self.loop.run_until_complete(go())
 
     def test_is_alive(self):
-        self.assertTrue(self.client.is_alive())
+        async def go():
+            self.assertTrue(await self.client.is_alive())
+        self.loop.run_until_complete(go())
 
     def test_store_and_get(self):
         async def go():

@@ -58,6 +58,32 @@ class Bucket:
         else:
             return self._client.get_encoder(content_type)
 
+    def set_encoder(self, content_type, encoder):
+        '''
+        Set the encoding function for the provided content type for
+        this bucket.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param encoder: an encoding function, takes a single object
+            argument and returns a string data as single argument.
+        :type encoder: function
+        '''
+        self._encoders[content_type] = encoder
+        return self
+
+    def set_decoder(self, content_type, decoder):
+        '''
+        Set the decoding function for the provided content type for
+        this bucket.
+        :param content_type: the requested media type
+        :type content_type: str
+        :param decoder: a decoding function, takes a string and
+            returns a Python type
+        :type decoder: function
+        '''
+        self._decoders[content_type] = decoder
+        return self
+
     async def get_keys(self):
         """
         Return all keys within the bucket.
