@@ -4,7 +4,8 @@ import struct
 import riak_pb
 from riak_pb import messages
 from riak.transports.pbc import codec
-from riak.content import RiakContent
+from aioriak.content import RiakContent
+from riak.riak_object import VClock
 from riak.util import decode_index_value, bytes_to_str, str_to_bytes
 from aioriak.error import RiakError
 
@@ -733,8 +734,8 @@ class RiakPbcAsyncTransport:
         msg_code, resp = await self._request(messages.MSG_CODE_GET_REQ, req,
                                              messages.MSG_CODE_GET_RESP)
         if resp is not None:
-            # if resp.HasField('vclock'):
-            #    robj.vclock = VClock(resp.vclock, 'binary')
+            if resp.HasField('vclock'):
+                robj.vclock = VClock(resp.vclock, 'binary')
             # We should do this even if there are no contents, i.e.
             # the object is tombstoned
             self._decode_contents(resp.content, robj)
@@ -768,8 +769,8 @@ class RiakPbcAsyncTransport:
         if resp is not None:
             if resp.HasField('key'):
                 robj.key = bytes_to_str(resp.key)
-            # if resp.HasField("vclock"):
-            #    robj.vclock = VClock(resp.vclock, 'binary')
+            if resp.HasField('vclock'):
+                robj.vclock = VClock(resp.vclock, 'binary')
             if resp.content:
                 self._decode_contents(resp.content, robj)
         elif not robj.key:
@@ -779,6 +780,10 @@ class RiakPbcAsyncTransport:
 
     async def delete(self, robj):
         req = riak_pb.RpbDelReq()
+
+        use_vclocks = (hasattr(robj, 'vclock') and robj.vclock)
+        if use_vclocks:
+            req.vclock = robj.vclock.encode('binary')
 
         bucket = robj.bucket
         req.bucket = str_to_bytes(bucket.name)

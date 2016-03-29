@@ -1,6 +1,29 @@
-from riak.content import RiakContent
-from riak.riak_object import content_property
+from aioriak.content import RiakContent
 from aioriak.error import ConflictError
+
+
+def content_property(name, doc=None):
+    '''
+    Delegates a property to the first sibling in a RiakObject, raising
+    an error when the object is in conflict.
+    '''
+    def _setter(self, value):
+        if len(self.siblings) == 0:
+            # In this case, assume that what the user wants is to
+            # create a new sibling inside an empty object.
+            self.siblings = [RiakContent(self)]
+        if len(self.siblings) != 1:
+            raise ConflictError()
+        setattr(self.siblings[0], name, value)
+
+    def _getter(self):
+        if len(self.siblings) == 0:
+            return
+        if len(self.siblings) != 1:
+            raise ConflictError()
+        return getattr(self.siblings[0], name)
+
+    return property(_getter, _setter, doc=doc)
 
 
 class RiakObject:

@@ -32,6 +32,25 @@ class Bucket:
         self._decoders = {}
         self._resolver = None
 
+    def _get_resolver(self):
+        if callable(self._resolver):
+            return self._resolver
+        elif self._resolver is None:
+            return self._client.resolver
+        else:
+            raise TypeError("resolver is not a function")
+
+    def _set_resolver(self, value):
+        if value is None or callable(value):
+            self._resolver = value
+        else:
+            raise TypeError("resolver is not a function")
+
+    resolver = property(_get_resolver, _set_resolver,
+                        doc='''The sibling-resolution function for this
+                        bucket. If the resolver is not set, the
+                        client's resolver will be used.''')
+
     def get_decoder(self, content_type):
         '''
         Get the decoding function for the provided content type for
