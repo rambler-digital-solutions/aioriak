@@ -1,6 +1,7 @@
 from .base import IntegrationTest, AsyncUnitTestCase
 from aioriak.bucket import Bucket
 from aioriak.error import ConflictError
+from riak.resolver import default_resolver, last_written_resolver
 import asyncio
 import json
 import pickle
@@ -333,18 +334,15 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             await obj.store()
 
             vals = set(await self.generate_siblings(obj, count=5))
-            print('++++', vals)
 
             # Make sure the object has five siblings...
             obj = await bucket.get(self.key_name)
             await obj.reload()
-            print('siblings', obj.siblings)
             self.assertEqual(len(obj.siblings), 5)
 
             # When the object is in conflict, using the shortcut methods
             # should raise the ConflictError
             with self.assertRaises(ConflictError):
-                print(type(obj))
                 obj.data
 
             # Get each of the values - make sure they match what was
@@ -360,4 +358,61 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             await obj.reload()
             self.assertEqual(len(obj.siblings), 1)
             self.assertEqual(obj.data, resolved_sibling.data)
+        self.loop.run_until_complete(go())
+
+    def test_resolution(self):
+        async def go():
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            obj = await bucket.get(self.key_name)
+            await bucket.set_property('allow_mult', True)
+
+            # Even if it previously existed, let's store a base resolved
+            # version from which we can diverge by sending a stale vclock.
+            obj.data = 'start'
+            obj.content_type = 'text/plain'
+            await obj.store()
+
+            vals = await self.generate_siblings(obj, count=5)
+
+            # Make sure the object has five siblings when using the
+            # default resolver
+            obj = await bucket.get(self.key_name)
+            await obj.reload()
+            self.assertEqual(len(obj.siblings), 5)
+
+            # Setting the resolver on the client object to use the
+            # "last-write-wins" behavior
+            self.client.resolver = last_written_resolver
+            await obj.reload()
+            self.assertEqual(obj.resolver, last_written_resolver)
+            self.assertEqual(1, len(obj.siblings))
+            self.assertEqual(obj.data, vals[-1])
+
+            # Set the resolver on the bucket to the default resolver,
+            # overriding the resolver on the client
+            bucket.resolver = default_resolver
+            await obj.reload()
+            self.assertEqual(obj.resolver, default_resolver)
+            self.assertEqual(len(obj.siblings), 5)
+
+            # Define our own custom resolver on the object that returns
+            # the maximum value, overriding the bucket and client resolvers
+            def max_value_resolver(obj):
+                obj.siblings = [max(obj.siblings, key=lambda s: s.data), ]
+
+            obj.resolver = max_value_resolver
+            await obj.reload()
+            self.assertEqual(obj.resolver, max_value_resolver)
+            self.assertEqual(obj.data, max(vals))
+
+            # Setting the resolver to None on all levels reverts to the
+            # default resolver.
+            obj.resolver = None
+            self.assertEqual(obj.resolver, default_resolver)  # set by bucket
+            bucket.resolver = None
+            self.assertEqual(obj.resolver, last_written_resolver)  # by client
+            self.client.resolver = None
+            self.assertEqual(obj.resolver, default_resolver)  # reset
+            self.assertEqual(bucket.resolver, default_resolver)  # reset
+            self.assertEqual(self.client.resolver, default_resolver)  # reset
         self.loop.run_until_complete(go())
