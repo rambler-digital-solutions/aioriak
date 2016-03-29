@@ -416,3 +416,39 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             self.assertEqual(bucket.resolver, default_resolver)  # reset
             self.assertEqual(self.client.resolver, default_resolver)  # reset
         self.loop.run_until_complete(go())
+
+    def test_resolution_default(self):
+        async def go():
+            # If no resolver is setup, be sure to resolve to default_resolver
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            self.assertEqual(self.client.resolver, default_resolver)
+            self.assertEqual(bucket.resolver, default_resolver)
+        self.loop.run_until_complete(go())
+
+    def test_tombstone_siblings(self):
+        async def go():
+            # Set up the bucket, clear any existing object...
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            obj = await bucket.get(self.key_name)
+            await bucket.set_property('allow_mult', True)
+
+            obj.data = 'start'
+            obj.content_type = 'text/plain'
+            await obj.store(return_body=True)
+
+            await obj.delete()
+
+            vals = set(await self.generate_siblings(obj, count=4))
+
+            obj = await bucket.get(self.key_name)
+
+            siblen = len(obj.siblings)
+            self.assertTrue(siblen == 5)
+
+            non_tombstones = 0
+            for sib in obj.siblings:
+                if sib.exists:
+                    non_tombstones += 1
+                self.assertTrue(not sib.exists or sib.data in vals)
+            self.assertEqual(non_tombstones, 4)
+        self.loop.run_until_complete(go())
