@@ -191,8 +191,8 @@ class RiakPbcAsyncTransport:
             rpb_content.content_encoding = robj.content_encoding
         for uk in robj.usermeta:
             pair = rpb_content.usermeta.add()
-            pair.key = uk
-            pair.value = robj.usermeta[uk]
+            pair.key = uk.encode()
+            pair.value = robj.usermeta[uk].encode()
         for link in robj.links:
             pb_link = rpb_content.links.add()
             try:
@@ -687,7 +687,7 @@ class RiakPbcAsyncTransport:
             if rpb_content.HasField("last_mod_usecs"):
                 sibling.last_modified += rpb_content.last_mod_usecs / 1000000.0
 
-        sibling.usermeta = dict([(usermd.key, usermd.value)
+        sibling.usermeta = dict([(usermd.key.decode(), usermd.value.decode())
                                  for usermd in rpb_content.usermeta])
         sibling.indexes = set([(index.key,
                                 decode_index_value(index.key, index.value))

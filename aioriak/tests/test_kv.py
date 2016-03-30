@@ -452,3 +452,48 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
                 self.assertTrue(not sib.exists or sib.data in vals)
             self.assertEqual(non_tombstones, 4)
         self.loop.run_until_complete(go())
+
+    def test_store_of_missing_object(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            # for json objects
+            o = await bucket.get(self.key_name)
+            self.assertEqual(o.exists, False)
+            o.data = {"foo": "bar"}
+            o.content_type = 'application/json'
+
+            o = await o.store()
+            self.assertEqual(o.data, {"foo": "bar"})
+            self.assertEqual(o.content_type, "application/json")
+            await o.delete()
+            # for binary objects
+            o = await bucket.get(self.randname())
+            self.assertEqual(o.exists, False)
+            o.encoded_data = '1234567890'.encode()
+            o.content_type = 'application/octet-stream'
+
+            o = await o.store()
+            self.assertEqual(o.encoded_data, '1234567890'.encode())
+            self.assertEqual(o.content_type, 'application/octet-stream')
+            await o.delete()
+        self.loop.run_until_complete(go())
+
+    def test_store_metadata(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            rand = self.randint()
+            obj = await bucket.new(self.key_name, rand)
+            obj.usermeta = {'custom': 'some metadata'}
+            await obj.store()
+            obj = await bucket.get(self.key_name)
+            self.assertEqual('some metadata', obj.usermeta['custom'])
+        self.loop.run_until_complete(go())
+
+    def test_list_buckets(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new("one", {"foo": "one", "bar": "red"})
+            await obj.store()
+            buckets = await self.client.get_buckets()
+            self.assertTrue(self.bucket_name in [x.name for x in buckets])
+        self.loop.run_until_complete(go())
