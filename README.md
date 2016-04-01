@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/rambler-digital-solutions/aioriak.svg?branch=master)](https://travis-ci.org/rambler-digital-solutions/aioriak)
 [![Coverage Status](https://coveralls.io/repos/github/rambler-digital-solutions/aioriak/badge.svg?branch=master)](https://coveralls.io/github/rambler-digital-solutions/aioriak?branch=master)
+[![GitHub issues](https://img.shields.io/github/issues/rambler-digital-solutions/aioriak.svg)](https://github.com/rambler-digital-solutions/aioriak/issues)
+[![PyPI version](https://badge.fury.io/py/aioriak.svg)](https://badge.fury.io/py/aioriak)
 # Python asyncio client for Riak #
 
 ## Installation ##
