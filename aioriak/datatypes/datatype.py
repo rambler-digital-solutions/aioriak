@@ -79,7 +79,7 @@ class Datatype:
         self._set_value(value)
         return self
 
-    def delete(self, **params):
+    async def delete(self, **params):
         '''
         Deletes the datatype from Riak. See :meth:`RiakClient.delete()
         <aioriak.client.RiakClient.delete>` for options.
@@ -87,7 +87,7 @@ class Datatype:
         self.clear()
         self._context = None
         self._set_value(self._default_value())
-        self.bucket._client.delete(self, **params)
+        await self.bucket._client.delete(self, **params)
         return self
 
     async def update(self, **params):
@@ -98,6 +98,7 @@ class Datatype:
         if not self.modified:
             raise ValueError("No operation to perform")
 
+        params.setdefault('return_body', True)
         await self.bucket._client.update_datatype(self, **params)
         self.clear()
 

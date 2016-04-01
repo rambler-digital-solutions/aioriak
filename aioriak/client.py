@@ -351,7 +351,7 @@ class RiakClient:
         '''
         return await self._transport.delete(robj)
 
-    async def update_datatype(self, datatype):
+    async def update_datatype(self, datatype, **params):
         '''
         Sends an update to a Riak Datatype to the server.
         :param datatype: the datatype with pending updates
@@ -359,4 +359,4 @@ class RiakClient:
         :rtype: tuple of datatype, opaque value and opaque context
         '''
 
-        return await self._transport.update_datatype(datatype)
+        return await self._transport.update_datatype(datatype, **params)

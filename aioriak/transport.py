@@ -331,6 +331,12 @@ class RiakPbcAsyncTransport:
             raise TypeError("Cannot send operation on datatype {!r}".
                             format(dtype))
 
+    def _encode_set_op(self, msg, op):
+        if 'adds' in op:
+            msg.set_op.adds.extend(str_to_bytes(op['adds']))
+        if 'removes' in op:
+            msg.set_op.removes.extend(str_to_bytes(op['removes']))
+
     def _encode_dt_options(self, req, params):
         for q in ['r', 'pr', 'w', 'dw', 'pw']:
             if q in params and params[q] is not None:
@@ -817,7 +823,6 @@ class RiakPbcAsyncTransport:
             req.context = datatype._context
 
         self._encode_dt_options(req, options)
-
         self._encode_dt_op(type_name, req, op)
 
         msg_code, resp = await self._request(
