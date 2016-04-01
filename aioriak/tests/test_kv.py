@@ -1,11 +1,15 @@
 from .base import IntegrationTest, AsyncUnitTestCase
 from aioriak.bucket import Bucket
+from aioriak.error import ConflictError
+from riak.resolver import default_resolver, last_written_resolver
+import asyncio
 import json
 import pickle
 import copy
 
 
 testrun_props_bucket = 'propsbucket'
+testrun_sibs_bucket = 'sibsbucket'
 
 
 class NotJsonSerializable(object):
@@ -296,4 +300,200 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             obj.data = ["second store"]
             with self.assertRaises(Exception):
                 await obj.store(if_none_match=True)
+        self.loop.run_until_complete(go())
+
+    async def generate_siblings(self, original, count=5, delay=None):
+        vals = []
+        for _ in range(count):
+            while True:
+                randval = str(self.randint())
+                if randval not in vals:
+                    break
+
+            other_obj = await original.bucket.new(key=original.key,
+                                                  data=randval,
+                                                  content_type='text/plain')
+            other_obj.vclock = original.vclock
+            await other_obj.store()
+            vals.append(randval)
+            if delay:
+                await asyncio.sleep(delay)
+        return vals
+
+    def test_siblings(self):
+        async def go():
+            # Set up the bucket, clear any existing object...
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            obj = await bucket.get(self.key_name)
+            await bucket.set_property('allow_mult', True)
+
+            # Even if it previously existed,let's store a base resolved version
+            # from which we can diverge by sending a stale vclock.
+            obj.data = 'start'
+            obj.content_type = 'text/plain'
+            await obj.store()
+
+            vals = set(await self.generate_siblings(obj, count=5))
+
+            # Make sure the object has five siblings...
+            obj = await bucket.get(self.key_name)
+            await obj.reload()
+            self.assertEqual(len(obj.siblings), 5)
+
+            # When the object is in conflict, using the shortcut methods
+            # should raise the ConflictError
+            with self.assertRaises(ConflictError):
+                obj.data
+
+            # Get each of the values - make sure they match what was
+            # assigned
+            vals2 = set([sibling.data for sibling in obj.siblings])
+            self.assertEqual(vals, vals2)
+
+            # Resolve the conflict, and then do a get...
+            resolved_sibling = obj.siblings[3]
+            obj.siblings = [resolved_sibling]
+            await obj.store()
+
+            await obj.reload()
+            self.assertEqual(len(obj.siblings), 1)
+            self.assertEqual(obj.data, resolved_sibling.data)
+        self.loop.run_until_complete(go())
+
+    def test_resolution(self):
+        async def go():
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            obj = await bucket.get(self.key_name)
+            await bucket.set_property('allow_mult', True)
+
+            # Even if it previously existed, let's store a base resolved
+            # version from which we can diverge by sending a stale vclock.
+            obj.data = 'start'
+            obj.content_type = 'text/plain'
+            await obj.store()
+
+            vals = await self.generate_siblings(obj, count=5)
+
+            # Make sure the object has five siblings when using the
+            # default resolver
+            obj = await bucket.get(self.key_name)
+            await obj.reload()
+            self.assertEqual(len(obj.siblings), 5)
+
+            # Setting the resolver on the client object to use the
+            # "last-write-wins" behavior
+            self.client.resolver = last_written_resolver
+            await obj.reload()
+            self.assertEqual(obj.resolver, last_written_resolver)
+            self.assertEqual(1, len(obj.siblings))
+            self.assertEqual(obj.data, vals[-1])
+
+            # Set the resolver on the bucket to the default resolver,
+            # overriding the resolver on the client
+            bucket.resolver = default_resolver
+            await obj.reload()
+            self.assertEqual(obj.resolver, default_resolver)
+            self.assertEqual(len(obj.siblings), 5)
+
+            # Define our own custom resolver on the object that returns
+            # the maximum value, overriding the bucket and client resolvers
+            def max_value_resolver(obj):
+                obj.siblings = [max(obj.siblings, key=lambda s: s.data), ]
+
+            obj.resolver = max_value_resolver
+            await obj.reload()
+            self.assertEqual(obj.resolver, max_value_resolver)
+            self.assertEqual(obj.data, max(vals))
+
+            # Setting the resolver to None on all levels reverts to the
+            # default resolver.
+            obj.resolver = None
+            self.assertEqual(obj.resolver, default_resolver)  # set by bucket
+            bucket.resolver = None
+            self.assertEqual(obj.resolver, last_written_resolver)  # by client
+            self.client.resolver = None
+            self.assertEqual(obj.resolver, default_resolver)  # reset
+            self.assertEqual(bucket.resolver, default_resolver)  # reset
+            self.assertEqual(self.client.resolver, default_resolver)  # reset
+        self.loop.run_until_complete(go())
+
+    def test_resolution_default(self):
+        async def go():
+            # If no resolver is setup, be sure to resolve to default_resolver
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            self.assertEqual(self.client.resolver, default_resolver)
+            self.assertEqual(bucket.resolver, default_resolver)
+        self.loop.run_until_complete(go())
+
+    def test_tombstone_siblings(self):
+        async def go():
+            # Set up the bucket, clear any existing object...
+            bucket = self.client.bucket(testrun_sibs_bucket)
+            obj = await bucket.get(self.key_name)
+            await bucket.set_property('allow_mult', True)
+
+            obj.data = 'start'
+            obj.content_type = 'text/plain'
+            await obj.store(return_body=True)
+
+            await obj.delete()
+
+            vals = set(await self.generate_siblings(obj, count=4))
+
+            obj = await bucket.get(self.key_name)
+
+            siblen = len(obj.siblings)
+            self.assertTrue(siblen == 5)
+
+            non_tombstones = 0
+            for sib in obj.siblings:
+                if sib.exists:
+                    non_tombstones += 1
+                self.assertTrue(not sib.exists or sib.data in vals)
+            self.assertEqual(non_tombstones, 4)
+        self.loop.run_until_complete(go())
+
+    def test_store_of_missing_object(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            # for json objects
+            o = await bucket.get(self.key_name)
+            self.assertEqual(o.exists, False)
+            o.data = {"foo": "bar"}
+            o.content_type = 'application/json'
+
+            o = await o.store()
+            self.assertEqual(o.data, {"foo": "bar"})
+            self.assertEqual(o.content_type, "application/json")
+            await o.delete()
+            # for binary objects
+            o = await bucket.get(self.randname())
+            self.assertEqual(o.exists, False)
+            o.encoded_data = '1234567890'.encode()
+            o.content_type = 'application/octet-stream'
+
+            o = await o.store()
+            self.assertEqual(o.encoded_data, '1234567890'.encode())
+            self.assertEqual(o.content_type, 'application/octet-stream')
+            await o.delete()
+        self.loop.run_until_complete(go())
+
+    def test_store_metadata(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            rand = self.randint()
+            obj = await bucket.new(self.key_name, rand)
+            obj.usermeta = {'custom': 'some metadata'}
+            await obj.store()
+            obj = await bucket.get(self.key_name)
+            self.assertEqual('some metadata', obj.usermeta['custom'])
+        self.loop.run_until_complete(go())
+
+    def test_list_buckets(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new("one", {"foo": "one", "bar": "red"})
+            await obj.store()
+            buckets = await self.client.get_buckets()
+            self.assertTrue(self.bucket_name in [x.name for x in buckets])
         self.loop.run_until_complete(go())

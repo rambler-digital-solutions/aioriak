@@ -4,7 +4,8 @@ import struct
 import riak_pb
 from riak_pb import messages
 from riak.transports.pbc import codec
-from riak.content import RiakContent
+from aioriak.content import RiakContent
+from riak.riak_object import VClock
 from riak.util import decode_index_value, bytes_to_str, str_to_bytes
 from aioriak.error import RiakError
 
@@ -190,8 +191,8 @@ class RiakPbcAsyncTransport:
             rpb_content.content_encoding = robj.content_encoding
         for uk in robj.usermeta:
             pair = rpb_content.usermeta.add()
-            pair.key = uk
-            pair.value = robj.usermeta[uk]
+            pair.key = uk.encode()
+            pair.value = robj.usermeta[uk].encode()
         for link in robj.links:
             pb_link = rpb_content.links.add()
             try:
@@ -329,6 +330,47 @@ class RiakPbcAsyncTransport:
         else:
             raise TypeError("Cannot send operation on datatype {!r}".
                             format(dtype))
+
+    def _encode_set_op(self, msg, op):
+        if 'adds' in op:
+            msg.set_op.adds.extend(str_to_bytes(op['adds']))
+        if 'removes' in op:
+            msg.set_op.removes.extend(str_to_bytes(op['removes']))
+
+    def _encode_map_op(self, msg, ops):
+        for op in ops:
+            name, dtype = op[1]
+            ftype = codec.MAP_FIELD_TYPES[dtype]
+            if op[0] == 'add':
+                add = msg.adds.add()
+                add.name = str_to_bytes(name)
+                add.type = ftype
+            elif op[0] == 'remove':
+                remove = msg.removes.add()
+                remove.name = str_to_bytes(name)
+                remove.type = ftype
+            elif op[0] == 'update':
+                update = msg.updates.add()
+                update.field.name = str_to_bytes(name)
+                update.field.type = ftype
+                self._encode_map_update(dtype, update, op[2])
+
+    def _encode_map_update(self, dtype, msg, op):
+        if dtype == 'counter':
+            # ('increment', some_int)
+            msg.counter_op.increment = op[1]
+        elif dtype == 'set':
+            self._encode_set_op(msg, op)
+        elif dtype == 'map':
+            self._encode_map_op(msg.map_op, op)
+        elif dtype == 'register':
+            # ('assign', some_str)
+            msg.register_op = str_to_bytes(op[1])
+        elif dtype == 'flag':
+            if op == 'enable':
+                msg.flag_op = riak_pb.MapUpdate.ENABLE
+            else:
+                msg.flag_op = riak_pb.MapUpdate.DISABLE
 
     def _encode_dt_options(self, req, params):
         for q in ['r', 'pr', 'w', 'dw', 'pw']:
@@ -686,7 +728,7 @@ class RiakPbcAsyncTransport:
             if rpb_content.HasField("last_mod_usecs"):
                 sibling.last_modified += rpb_content.last_mod_usecs / 1000000.0
 
-        sibling.usermeta = dict([(usermd.key, usermd.value)
+        sibling.usermeta = dict([(usermd.key.decode(), usermd.value.decode())
                                  for usermd in rpb_content.usermeta])
         sibling.indexes = set([(index.key,
                                 decode_index_value(index.key, index.value))
@@ -733,8 +775,8 @@ class RiakPbcAsyncTransport:
         msg_code, resp = await self._request(messages.MSG_CODE_GET_REQ, req,
                                              messages.MSG_CODE_GET_RESP)
         if resp is not None:
-            # if resp.HasField('vclock'):
-            #    robj.vclock = VClock(resp.vclock, 'binary')
+            if resp.HasField('vclock'):
+                robj.vclock = VClock(resp.vclock, 'binary')
             # We should do this even if there are no contents, i.e.
             # the object is tombstoned
             self._decode_contents(resp.content, robj)
@@ -768,8 +810,8 @@ class RiakPbcAsyncTransport:
         if resp is not None:
             if resp.HasField('key'):
                 robj.key = bytes_to_str(resp.key)
-            # if resp.HasField("vclock"):
-            #    robj.vclock = VClock(resp.vclock, 'binary')
+            if resp.HasField('vclock'):
+                robj.vclock = VClock(resp.vclock, 'binary')
             if resp.content:
                 self._decode_contents(resp.content, robj)
         elif not robj.key:
@@ -779,6 +821,10 @@ class RiakPbcAsyncTransport:
 
     async def delete(self, robj):
         req = riak_pb.RpbDelReq()
+
+        use_vclocks = (hasattr(robj, 'vclock') and robj.vclock)
+        if use_vclocks:
+            req.vclock = robj.vclock.encode('binary')
 
         bucket = robj.bucket
         req.bucket = str_to_bytes(bucket.name)
@@ -812,7 +858,6 @@ class RiakPbcAsyncTransport:
             req.context = datatype._context
 
         self._encode_dt_options(req, options)
-
         self._encode_dt_op(type_name, req, op)
 
         msg_code, resp = await self._request(

@@ -4,12 +4,13 @@ from commands import (docker_build, docker_start, docker_stop, setup_riak,
 
 setup(
     name='aioriak',
-    version='0.0.1',
+    version='0.0.2',
     description='Async implementation of Riak DB python client',
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
     long_description='',
-    url='',
+    url='https://github.com/rambler-digital-solutions/aioriak',
+    keywords='riak asyncio client',
     # package_dir={'': ''},
     packages=find_packages('', exclude=('*.tests',)),
     include_package_data=True,
@@ -28,5 +29,14 @@ setup(
         'docker_stop': docker_stop,
         'setup_riak': setup_riak,
         'create_bucket_types': create_bucket_types,
-    }
+    },
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3 :: Only',
+        'Topic :: Database',
+        'Topic :: Software Development :: Libraries :: Python Modules'
+    ],
 )
