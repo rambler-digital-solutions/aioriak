@@ -3,6 +3,7 @@ from aioriak.bucket import Bucket, BucketType
 from aioriak import datatypes
 from aioriak.tests.base import IntegrationTest, AsyncUnitTestCase
 from aioriak import error
+from aioriak.riak_object import RiakObject
 
 
 class DatatypeUnitTestBase:
@@ -104,7 +105,7 @@ class DatatypeIntegrationTests(IntegrationTest,
 
     def test_dt_set(self):
         async def go():
-            btype = self.client.bucket_type('sets')
+            btype = self.client.bucket_type('pytest-sets')
             bucket = btype.bucket(self.bucket_name)
             myset = datatypes.Set(bucket, self.key_name)
             myset.add('Sean')
@@ -118,10 +119,190 @@ class DatatypeIntegrationTests(IntegrationTest,
 
             otherset.add('Russell')
             otherset.discard('Sean')
-            await otherset.store(return_body=True)
+            await otherset.store()
 
             await myset.reload()
             self.assertIn('Russell', myset)
             self.assertIn('Brett', myset)
             self.assertNotIn('Sean', myset)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_remove_without_context(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add("X")
+            set.add("Y")
+            set.add("Z")
+            with self.assertRaises(error.ContextRequired):
+                set.discard("Y")
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_remove_fetching_context(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add('X')
+            set.add('Y')
+            await set.store()
+
+            await set.reload()
+            set.discard('bogus')
+            await set.store()
+
+            set2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'X', 'Y'}, set2.value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_add_twice(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add('X')
+            set.add('Y')
+            await set.store()
+
+            await set.reload()
+            set.add('X')
+            await set.store()
+
+            set2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'X', 'Y'}, set2.value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_add_wins_in_same_op(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add('X')
+            set.add('Y')
+            await set.store()
+
+            await set.reload()
+            set.add('X')
+            set.discard('X')
+            await set.store()
+
+            set2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'X', 'Y'}, set2.value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_add_wins_in_same_op_reversed(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add('X')
+            set.add('Y')
+            await set.store()
+
+            await set.reload()
+            set.discard('X')
+            set.add('X')
+            await set.store()
+
+            set2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'X', 'Y'}, set2.value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_remove_old_context(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add('X')
+            set.add('Y')
+            await set.store()
+
+            await set.reload()
+
+            set_parallel = datatypes.Set(bucket, self.key_name)
+            set_parallel.add('Z')
+            await set_parallel.store()
+
+            set.discard('Z')
+            await set.store()
+
+            set2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'X', 'Y', 'Z'}, set2.value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_remove_updated_context(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            set = datatypes.Set(bucket, self.key_name)
+
+            set.add('X')
+            set.add('Y')
+            await set.store()
+
+            set_parallel = datatypes.Set(bucket, self.key_name)
+            set_parallel.add('Z')
+            await set_parallel.store()
+
+            await set.reload()
+            set.discard('Z')
+            await set.store()
+
+            set2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'X', 'Y'}, set2.value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_set_return_body_true_default(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-sets')
+            bucket = btype.bucket(self.bucket_name)
+            myset = await bucket.new(self.key_name)
+            myset.add('X')
+            await myset.store(return_body=False)
+            with self.assertRaises(error.ContextRequired):
+                myset.discard('X')
+
+            myset.add('Y')
+            await myset.store()
+            self.assertSetEqual(myset.value, {'X', 'Y'})
+
+            myset.discard('X')
+            await myset.store()
+            self.assertSetEqual(myset.value, {'Y'})
+        self.loop.run_until_complete(go())
+
+    def test_delete_datatype(self):
+        async def go():
+            ctype = self.client.bucket_type('pytest-counters')
+            cbucket = ctype.bucket(self.bucket_name)
+            counter = await cbucket.new(self.key_name)
+            counter.increment(5)
+            await counter.store()
+
+            stype = self.client.bucket_type('pytest-sets')
+            sbucket = stype.bucket(self.bucket_name)
+            set_ = await sbucket.new(self.key_name)
+            set_.add("Brett")
+            await set_.store()
+
+            '''mtype = self.client.bucket_type('pytest-maps')
+            mbucket = mtype.bucket(self.bucket_name)
+            map_ = await mbucket.new(self.key_name)
+            map_.sets['people'].add('Sean')
+            await map_.store()'''
+
+            for t in [counter, set_]:
+                await t.delete()
+                obj = RiakObject(self.client, t.bucket, t.key)
+                await self.client.get(obj)
+                self.assertFalse(
+                    obj.exists,
+                    '{0} exists after deletion'.format(t.type_name))
         self.loop.run_until_complete(go())
