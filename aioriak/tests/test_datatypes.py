@@ -101,3 +101,27 @@ class DatatypeIntegrationTests(IntegrationTest,
             await mycount.reload()
             self.assertEqual(2, mycount.value)
         self.loop.run_until_complete(go())
+
+    def test_dt_set(self):
+        async def go():
+            btype = self.client.bucket_type('sets')
+            bucket = btype.bucket(self.bucket_name)
+            myset = datatypes.Set(bucket, self.key_name)
+            myset.add('Sean')
+            myset.add('Brett')
+            await myset.store()
+
+            otherset = await bucket.get(self.key_name)
+
+            self.assertIn('Sean', otherset)
+            self.assertIn('Brett', otherset)
+
+            otherset.add('Russell')
+            otherset.discard('Sean')
+            await otherset.store(return_body=True)
+
+            await myset.reload()
+            self.assertIn('Russell', myset)
+            self.assertIn('Brett', myset)
+            self.assertNotIn('Sean', myset)
+        self.loop.run_until_complete(go())
