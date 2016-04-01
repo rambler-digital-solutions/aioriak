@@ -337,6 +337,41 @@ class RiakPbcAsyncTransport:
         if 'removes' in op:
             msg.set_op.removes.extend(str_to_bytes(op['removes']))
 
+    def _encode_map_op(self, msg, ops):
+        for op in ops:
+            name, dtype = op[1]
+            ftype = codec.MAP_FIELD_TYPES[dtype]
+            if op[0] == 'add':
+                add = msg.adds.add()
+                add.name = str_to_bytes(name)
+                add.type = ftype
+            elif op[0] == 'remove':
+                remove = msg.removes.add()
+                remove.name = str_to_bytes(name)
+                remove.type = ftype
+            elif op[0] == 'update':
+                update = msg.updates.add()
+                update.field.name = str_to_bytes(name)
+                update.field.type = ftype
+                self._encode_map_update(dtype, update, op[2])
+
+    def _encode_map_update(self, dtype, msg, op):
+        if dtype == 'counter':
+            # ('increment', some_int)
+            msg.counter_op.increment = op[1]
+        elif dtype == 'set':
+            self._encode_set_op(msg, op)
+        elif dtype == 'map':
+            self._encode_map_op(msg.map_op, op)
+        elif dtype == 'register':
+            # ('assign', some_str)
+            msg.register_op = str_to_bytes(op[1])
+        elif dtype == 'flag':
+            if op == 'enable':
+                msg.flag_op = riak_pb.MapUpdate.ENABLE
+            else:
+                msg.flag_op = riak_pb.MapUpdate.DISABLE
+
     def _encode_dt_options(self, req, params):
         for q in ['r', 'pr', 'w', 'dw', 'pw']:
             if q in params and params[q] is not None:
