@@ -83,6 +83,44 @@ class RegisterUnitTests(DatatypeUnitTestBase, unittest.TestCase):
         self.assertEqual(('assign', 'foobarbaz'), op)
 
 
+class MapUnitTests(DatatypeUnitTestBase, unittest.TestCase):
+    dtype = datatypes.Map
+
+    def op(self, dtype):
+        dtype.counters['a'].increment(2)
+        dtype.registers['b'].assign('testing')
+        dtype.flags['c'].enable()
+        dtype.maps['d'][('e', 'set')].add('deep value')
+        dtype.maps['f'].counters['g']
+        dtype.maps['h'].maps['i'].flags['j']
+
+    def check_op_output(self, op):
+        self.assertIn(('update', ('a', 'counter'), ('increment', 2)), op)
+        self.assertIn(('update', ('b', 'register'), ('assign', 'testing')), op)
+        self.assertIn(('update', ('c', 'flag'), 'enable'), op)
+        self.assertIn(('update', ('d', 'map'), [('update', ('e', 'set'),
+                                                 {'adds': ['deep value']})]),
+                      op)
+        self.assertNotIn(('update', ('f', 'map'), None), op)
+        self.assertNotIn(('update', ('h', 'map'), [('update', ('i', 'map'),
+                                                    None)]), op)
+
+    def test_removes_require_context(self):
+        dtype = self.dtype(self.bucket, 'key')
+        with self.assertRaises(error.ContextRequired):
+            del dtype.sets['foo']
+
+        with self.assertRaises(error.ContextRequired):
+            dtype.sets['bar'].discard('xyz')
+
+        with self.assertRaises(error.ContextRequired):
+            del dtype.maps['baz'].registers['quux']
+
+        dtype._context = 'blah'
+        del dtype.sets['foo']
+        self.assertTrue(dtype.modified)
+
+
 class DatatypeIntegrationTests(IntegrationTest,
                                AsyncUnitTestCase):
     def test_dt_counter(self):
@@ -292,17 +330,137 @@ class DatatypeIntegrationTests(IntegrationTest,
             set_.add("Brett")
             await set_.store()
 
-            '''mtype = self.client.bucket_type('pytest-maps')
+            mtype = self.client.bucket_type('pytest-maps')
             mbucket = mtype.bucket(self.bucket_name)
             map_ = await mbucket.new(self.key_name)
             map_.sets['people'].add('Sean')
-            await map_.store()'''
+            await map_.store()
 
-            for t in [counter, set_]:
+            for t in [counter, set_, map_]:
                 await t.delete()
                 obj = RiakObject(self.client, t.bucket, t.key)
                 await self.client.get(obj)
                 self.assertFalse(
                     obj.exists,
                     '{0} exists after deletion'.format(t.type_name))
+        self.loop.run_until_complete(go())
+
+    def test_dt_map(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-maps')
+            bucket = btype.bucket(self.bucket_name)
+            mymap = datatypes.Map(bucket, self.key_name)
+
+            mymap.counters['a'].increment(2)
+            mymap.registers['b'].assign('testing')
+            mymap.flags['c'].enable()
+            mymap.maps['d'][('e', 'set')].add('deep value')
+            await mymap.store()
+
+            othermap = await bucket.get(self.key_name)
+
+            self.assertIn('a', othermap.counters)
+            self.assertIn('b', othermap.registers)
+            self.assertIn('c', othermap.flags)
+            self.assertIn('d', othermap.maps)
+
+            self.assertEqual(2, othermap.counters['a'].value)
+            self.assertEqual('testing', othermap.registers['b'].value)
+            self.assertTrue(othermap.flags['c'].value)
+            self.assertEqual({('e', 'set'): frozenset(['deep value'])},
+                             othermap.maps['d'].value)
+            self.assertEqual(frozenset([]), othermap.sets['f'].value)
+
+            othermap.sets['f'].add('thing1')
+            othermap.sets['f'].add('thing2')
+            del othermap.counters['a']
+            await othermap.store(return_body=True)
+
+            await mymap.reload()
+            self.assertNotIn('a', mymap.counters)
+            self.assertIn('f', mymap.sets)
+            self.assertSetEqual({'thing1', 'thing2'}, mymap.sets['f'].value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_map_remove_set_update_same_op(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-maps')
+            bucket = btype.bucket(self.bucket_name)
+            map = datatypes.Map(bucket, self.key_name)
+
+            map.sets['set'].add('X')
+            map.sets['set'].add('Y')
+            await map.store()
+
+            await map.reload()
+            del map.sets['set']
+            map.sets['set'].add('Z')
+            await map.store()
+
+            map2 = await bucket.get(self.key_name)
+            self.assertSetEqual({'Z'}, map2.sets['set'].value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_map_remove_counter_increment_same_op(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-maps')
+            bucket = btype.bucket(self.bucket_name)
+            map = datatypes.Map(bucket, self.key_name)
+
+            map.counters['counter'].increment(5)
+            await map.store()
+
+            await map.reload()
+            self.assertEqual(5, map.counters['counter'].value)
+            map.counters['counter'].increment(2)
+            del map.counters['counter']
+            await map.store()
+
+            map2 = await bucket.get(self.key_name)
+            self.assertEqual(2, map2.counters['counter'].value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_map_remove_map_update_same_op(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-maps')
+            bucket = btype.bucket(self.bucket_name)
+            map = datatypes.Map(bucket, self.key_name)
+
+            map.maps['map'].sets['set'].add("X")
+            map.maps['map'].sets['set'].add("Y")
+            await map.store()
+
+            await map.reload()
+            del map.maps['map']
+            map.maps['map'].sets['set'].add("Z")
+            await map.store()
+
+            map2 = await bucket.get(self.key_name)
+            self.assertSetEqual({"Z"}, map2.maps['map'].sets['set'].value)
+        self.loop.run_until_complete(go())
+
+    def test_dt_map_return_body_true_default(self):
+        async def go():
+            btype = self.client.bucket_type('pytest-maps')
+            bucket = btype.bucket(self.bucket_name)
+            mymap = await bucket.new(self.key_name)
+            mymap.sets['a'].add('X')
+            await mymap.store(return_body=False)
+            with self.assertRaises(error.ContextRequired):
+                mymap.sets['a'].discard('X')
+            with self.assertRaises(error.ContextRequired):
+                del mymap.sets['a']
+
+            mymap.sets['a'].add('Y')
+            await mymap.store()
+            self.assertSetEqual(mymap.sets['a'].value, {'X', 'Y'})
+
+            mymap.sets['a'].discard('X')
+            await mymap.store()
+            self.assertSetEqual(mymap.sets['a'].value, {'Y'})
+
+            del mymap.sets['a']
+            await mymap.store()
+
+            self.assertEqual(mymap.value, {})
         self.loop.run_until_complete(go())
