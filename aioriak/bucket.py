@@ -2,11 +2,11 @@ from aioriak.datatypes import TYPES
 
 
 class Bucket:
-    """
+    '''
     The ``Bucket`` object allows you to access and change information
     about a Riak bucket, and provides async methods to create or retrieve
     objects within the bucket.
-    """
+    '''
 
     def __init__(self, client, name, bucket_type):
         """

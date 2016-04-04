@@ -50,6 +50,11 @@ def binary_encoder_decoder(obj):
 
 
 class RiakClient:
+    '''
+    The ``RiakClient`` object holds information necessary to connect
+    to Riak. Requests can be made to Riak directly through the client
+    or by using the methods on related objects.
+    '''
     def __init__(self, host='localhost', port=8087, loop=None):
         self._host = host
         self._port = port
@@ -69,6 +74,7 @@ class RiakClient:
     def get_decoder(self, content_type):
         '''
         Get the decoding function for the provided content type.
+
         :param content_type: the requested media type
         :type content_type: str
         :rtype: function
@@ -78,6 +84,7 @@ class RiakClient:
     def get_encoder(self, content_type):
         '''
         Get the encoding function for the provided content type.
+
         :param content_type: the requested media type
         :type content_type: str
         :rtype: function
@@ -87,6 +94,7 @@ class RiakClient:
     def set_encoder(self, content_type, encoder):
         '''
         Set the encoding function for the provided content type.
+
         :param content_type: the requested media type
         :type content_type: str
         :param encoder: an encoding function, takes a single object
@@ -98,6 +106,7 @@ class RiakClient:
     def set_decoder(self, content_type, decoder):
         '''
         Set the decoding function for the provided content type.
+
         :param content_type: the requested media type
         :type content_type: str
         :param decoder: a decoding function, takes encoded data and
@@ -130,10 +139,25 @@ class RiakClient:
     async def create(cls, host='localhost', port=8087, loop=None):
         '''
         Return initialized instance of RiakClient since
-        RiakClient.__init__() can not ne async.
+        RiakClient.__init__() can't be async.
 
-        client =  await RiakClient.create('localhost', loop)
-        :rtupe: RiakClient
+        :Example:
+
+        .. code-block:: python
+
+            import asyncio
+            from aioriak import RiakClient
+            loop = asyncio.get_event_loop()
+            async def go():
+                client = await RiakClient.create('localhost', 8087, loop)
+            loop.run_until_complete(go())
+
+        :param host: Hostname or ip address of Riak instance
+        :type host: str
+        :param port: Port of riak instance
+        :type port: int
+        :param loop: asyncio event loop
+        :rtype: :class:`~aioriak.client.RiakClient`
         '''
         client = cls(host, port, loop)
         await client._create_transport()
@@ -142,12 +166,13 @@ class RiakClient:
     async def fetch_datatype(self, bucket, key):
         '''
         Fetches the value of a Riak Datatype.
+
         :param bucket: the bucket of the datatype, which must belong to a
-          :class:`~aioriak.bucket.BucketType`
+            :class:`~aioriak.bucket.BucketType`
         :type bucket: :class:`~aioriak.bucket.Bucket`
         :param key: the key of the datatype
         :type key: string
-        :rtype: :class:`~riak.datatypes.Datatype`
+        :rtype: :class:`~aioriak.datatypes.Datatype`
         '''
         dtype, value, context = await self._fetch_datatype(bucket, key)
 
@@ -157,11 +182,13 @@ class RiakClient:
     async def _fetch_datatype(self, bucket, key):
         '''
         _fetch_datatype(bucket, key)
+
         Fetches the value of a Riak Datatype as raw data. This is used
         internally to update already reified Datatype objects. Use the
         public version to fetch a reified type.
+
         :param bucket: the bucket of the datatype, which must belong to a
-          :class:`~aioriak.BucketType`
+            :class:`~aioriak.BucketType`
         :type bucket: RiakBucket
         :param key: the key of the datatype
         :type key: string, None
@@ -172,8 +199,7 @@ class RiakClient:
     async def ping(self):
         '''
         Check if the Riak server for this ``RiakClient`` instance is alive.
-        @TODO: .. note:: This request is automatically retried :attr:`retries`
-           times if it fails due to network error.
+
         :rtype: boolean
         '''
         return await self._transport.ping()
@@ -181,25 +207,32 @@ class RiakClient:
     is_alive = ping
 
     async def get_client_id(self):
-        'Client ID for this RiakClient instance'
+        '''
+        Get client ID for this RiakClient instance
+
+        :rtype: bytes
+        '''
         return await self._transport.get_client_id()
 
     async def set_client_id(self, id):
-        'Set Client ID for this RiakClient instance'
+        '''
+        Set Client ID for this RiakClient instance'
+        '''
         return await self._transport.set_client_id(id)
 
     async def get_buckets(self, bucket_type=None):
-        """
-        get_buckets(bucket_type=None)
+        '''
         Get the list of buckets as :class:`Bucket
         <aioriak.bucket.Bucket>` instances.
+
         .. warning:: Do not use this in production, as it requires
-           traversing through all keys stored in a cluster.
+            traversing through all keys stored in a cluster.
+
         :param bucket_type: the optional containing bucket type
-        :type bucket_type: :class:`~riak.bucket.BucketType`
+        :type bucket_type: :class:`~aioriak.bucket.BucketType`
         :rtype: list of :class:`Bucket <aioriak.bucket.Bucket>`
-                instances
-        """
+            instances
+        '''
         if bucket_type:
             maker = bucket_type.bucket
         else:
@@ -213,10 +246,11 @@ class RiakClient:
         '''
         Gets the bucket-type by the specified name. Bucket-types do
         not always exist (unlike buckets), but this will always return
-        a :class:`BucketType <riak.bucket.BucketType>` object.
+        a :class:`BucketType <aioriak.bucket.BucketType>` object.
+
         :param name: the bucket name
         :type name: str
-        :rtype: :class:`BucketType <riak.bucket.BucketType>`
+        :rtype: :class:`BucketType <aioriak.bucket.BucketType>`
         '''
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
@@ -232,19 +266,21 @@ class RiakClient:
         '''
         Get the bucket by the specified name. Since buckets always exist,
         this will always return a
-        :class:`RiakBucket <aioriak.bucket.RiakBucket>`.
+        :class:`Bucket <aioriak.bucket.Bucket>`.
         If you are using a bucket that is contained in a bucket type, it is
         preferable to access it from the bucket type object::
+
             # Preferred:
             client.bucket_type("foo").bucket("bar")
             # Equivalent, but not preferred:
             client.bucket("bar", bucket_type="foo")
+
         :param name: the bucket name
         :type name: str
         :param bucket_type: the parent bucket-type
-        :type bucket_type: :class:`BucketType <riak.bucket.BucketType>`
-              or str
-        :rtype: :class:`RiakBucket <riak.bucket.RiakBucket>`
+        :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
+            or str
+        :rtype: :class:`Bucket <aioriak.bucket.Bucket>`
         '''
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
@@ -253,15 +289,15 @@ class RiakClient:
             bucket_type = self.bucket_type(bucket_type)
         elif not isinstance(bucket_type, BucketType):
             raise TypeError('bucket_type must be a string '
-                            'or riak.bucket.BucketType')
+                            'or aioriak.bucket.BucketType')
 
         return self._buckets.setdefault((bucket_type, name),
                                         Bucket(self, name, bucket_type))
 
     async def get_bucket_type_props(self, bucket_type):
         '''
-        get_bucket_type_props(bucket_type)
         Fetches properties for the given bucket-type.
+
         :param bucket_type: the bucket-type whose properties will be fetched
         :type bucket_type: BucketType
         :rtype: dict
@@ -270,8 +306,8 @@ class RiakClient:
 
     async def set_bucket_type_props(self, bucket_type, props):
         '''
-        set_bucket_type_props(bucket_type, props)
         Sets properties for the given bucket-type.
+
         :param bucket_type: the bucket-type whose properties will be set
         :type bucket_type: BucketType
         :param props: the properties to set
@@ -281,24 +317,20 @@ class RiakClient:
 
     async def get_bucket_props(self, bucket):
         '''
-        get_bucket_props(bucket)
         Fetches bucket properties for the given bucket.
-        .. note:: This request is automatically retried :attr:`retries`
-           times if it fails due to network error.
+
         :param bucket: the bucket whose properties will be fetched
-        :type bucket: RiakBucket
+        :type bucket: Bucket
         :rtype: dict
         '''
         return await self._transport.get_bucket_props(bucket)
 
     async def set_bucket_props(self, bucket, props):
         '''
-        set_bucket_props(bucket, props)
         Sets bucket properties for the given bucket.
-        .. note:: This request is automatically retried :attr:`retries`
-           times if it fails due to network error.
+
         :param bucket: the bucket whose properties will be set
-        :type bucket: RiakBucket
+        :type bucket: Bucket
         :param props: the properties to set
         :type props: dict
         '''
@@ -306,10 +338,11 @@ class RiakClient:
 
     async def get_keys(self, bucket):
         '''
-        get_keys(bucket)
         Lists all keys in a bucket.
+
         .. warning:: Do not use this in production, as it requires
            traversing through all keys stored in a cluster.
+
         :param bucket: the bucket whose keys are fetched
         :type bucket: Bucket
         :rtype: list
@@ -318,8 +351,8 @@ class RiakClient:
 
     async def get(self, robj):
         '''
-        get(robj)
         Fetches the contents of a Riak object.
+
         :param robj: the object to fetch
         :type robj: RiakObject
         '''
@@ -331,8 +364,8 @@ class RiakClient:
 
     async def put(self, robj, return_body):
         '''
-        put(robj)
         Stores an object in the Riak cluster.
+
         :param return_body: whether to return the resulting object
             after the write
         :type return_body: boolean
@@ -343,9 +376,8 @@ class RiakClient:
 
     async def delete(self, robj):
         '''
-        delete(robj, rw=None, r=None, w=None, dw=None, pr=None, pw=None,\
-               timeout=None)
         Deletes an object from Riak.
+
         :param robj: the object to delete
         :type robj: RiakObject
         '''
@@ -354,6 +386,7 @@ class RiakClient:
     async def update_datatype(self, datatype, **params):
         '''
         Sends an update to a Riak Datatype to the server.
+
         :param datatype: the datatype with pending updates
         :type datatype: :class:`~aioriak.datatypes.Datatype`
         :rtype: tuple of datatype, opaque value and opaque context
