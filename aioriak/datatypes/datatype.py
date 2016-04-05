@@ -38,6 +38,7 @@ class Datatype:
     def context(self):
         '''
         The opaque context for this type, if it was previously fetched.
+
         :rtype: str
         '''
         if self._context:
@@ -47,6 +48,7 @@ class Datatype:
     def modified(self):
         '''
         Whether this datatype has staged local modifications.
+
         :rtype: bool
         '''
         raise NotImplementedError
@@ -56,8 +58,10 @@ class Datatype:
     async def reload(self, **params):
         '''
         Reloads the datatype from Riak.
+
         .. warning: This clears any local modifications you might have
            made.
+
         :rtype: :class:`Datatype`
         '''
         if not self.bucket:
@@ -93,6 +97,7 @@ class Datatype:
     async def update(self, **params):
         '''
         Sends locally staged mutations to Riak.
+
         :rtype: a subclass of :class:`~aioriak.datatypes.Datatype`
         '''
         if not self.modified:
@@ -107,18 +112,18 @@ class Datatype:
     store = update
 
     def clear(self):
-        """
+        '''
         Removes all locally staged mutations.
-        """
+        '''
         self._post_init()
 
     def to_op(self):
-        """
+        '''
         Extracts the mutation operation from this datatype, if any.
         Each type must implement this method, returning the
         appropriate operation, or `None` if there is no queued
         mutation.
-        """
+        '''
         raise NotImplementedError
 
     # Private stuff
@@ -135,6 +140,7 @@ class Datatype:
         '''
         Checks that initial values of the type are appropriate. Each
         type must implement this method.
+
         :rtype: bool
         '''
         raise NotImplementedError

@@ -35,7 +35,7 @@ class AsyncPBStream:
 
 
 class RPBPacketParser:
-    """ Riak protobuf packet parser."""
+    ''' Riak protobuf packet parser.'''
     HEADER_LENGTH = 4
 
     def __init__(self, reader, initial_data=bytearray(), loop=None):
@@ -178,6 +178,7 @@ class RiakPbcAsyncTransport:
         '''
         Fills an RpbContent message with the appropriate data and
         metadata from a RiakObject.
+
         :param robj: a RiakObject
         :type robj: RiakObject
         :param rpb_content: the protobuf message to fill
@@ -215,13 +216,14 @@ class RiakPbcAsyncTransport:
         rpb_content.value = robj.encoded_data
 
     def _encode_bucket_props(self, props, msg):
-        """
+        '''
         Encodes a dict of bucket properties into the protobuf message.
+
         :param props: bucket properties
         :type props: dict
         :param msg: the protobuf message to fill
         :type msg: riak_pb.RpbSetBucketReq
-        """
+        '''
         for prop in codec.NORMAL_PROPS:
             if prop in props and props[prop] is not None:
                 if isinstance(props[prop], str):
@@ -250,6 +252,7 @@ class RiakPbcAsyncTransport:
         '''
         Encodes a list of commit hooks into their protobuf equivalent.
         Used in bucket properties.
+
         :param hooklist: a list of commit hooks
         :type hooklist: list
         :param msg: a protobuf field that is a list of commit hooks
@@ -262,6 +265,7 @@ class RiakPbcAsyncTransport:
         '''
         Encodes a commit hook dict into the protobuf message. Used in
         bucket properties.
+
         :param hook: the hook to encode
         :type hook: dict
         :param msg: the protobuf message to fill
@@ -278,6 +282,7 @@ class RiakPbcAsyncTransport:
         '''
         Encodes a dict with 'mod' and 'fun' keys into a protobuf
         modfun pair. Used in bucket properties.
+
         :param props: the module/function pair
         :type props: dict
         :param msg: the protobuf message to fill
@@ -294,6 +299,7 @@ class RiakPbcAsyncTransport:
         '''
         Converts a symbolic quorum value into its on-the-wire
         equivalent.
+
         :param rw: the quorum
         :type rw: string, integer
         :rtype: integer
@@ -428,6 +434,7 @@ class RiakPbcAsyncTransport:
     def _decode_bucket_props(self, msg):
         '''
         Decodes the protobuf bucket properties message into a dict.
+
         :param msg: the protobuf message to decode
         :type msg: riak_pb.RpbBucketProps
         :rtype dict
@@ -459,6 +466,7 @@ class RiakPbcAsyncTransport:
         '''
         Decodes a list of protobuf commit hooks into their python
         equivalents. Used in bucket properties.
+
         :param hooklist: a list of protobuf commit hooks
         :type hooklist: list
         :rtype list
@@ -469,6 +477,7 @@ class RiakPbcAsyncTransport:
         '''
         Decodes a protobuf commit hook message into a dict. Used in
         bucket properties.
+
         :param hook: the hook to decode
         :type hook: riak_pb.RpbCommitHook
         :rtype dict
@@ -482,6 +491,7 @@ class RiakPbcAsyncTransport:
         '''
         Decodes a protobuf modfun pair into a dict with 'mod' and
         'fun' keys. Used in bucket properties.
+
         :param modfun: the protobuf message to decode
         :type modfun: riak_pb.RpbModFun
         :rtype dict
@@ -493,6 +503,7 @@ class RiakPbcAsyncTransport:
         '''
         Converts a protobuf quorum value to a symbolic value if
         necessary.
+
         :param rw: the quorum
         :type rw: int
         :rtype int or string
@@ -578,6 +589,7 @@ class RiakPbcAsyncTransport:
     async def get_bucket_type_props(self, bucket_type):
         '''
         Fetch bucket-type properties
+
         :param bucket_type: A :class:`BucketType <aioriak.bucket.BucketType>`
                instance
         :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
@@ -593,8 +605,8 @@ class RiakPbcAsyncTransport:
     async def fetch_datatype(self, bucket, key):
 
         if bucket.bucket_type.is_default():
-            raise NotImplementedError("Datatypes cannot be used in the default"
-                                      " bucket-type.")
+            raise NotImplementedError('Datatypes cannot be used in the default'
+                                      ' bucket-type.')
         req = riak_pb.DtFetchReq()
         req.type = bucket.bucket_type.name.encode()
         req.bucket = bucket.name.encode()
@@ -623,6 +635,7 @@ class RiakPbcAsyncTransport:
     async def set_bucket_type_props(self, bucket_type, props):
         '''
         Set bucket-type properties
+
         :param bucket_type: A :class:`BucketType <aioriak.bucket.BucketType>`
                instance
         :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
@@ -666,9 +679,9 @@ class RiakPbcAsyncTransport:
         return res.buckets
 
     async def get_keys(self, bucket):
-        """
+        '''
         Lists all keys within a bucket.
-        """
+        '''
         req = riak_pb.RpbListKeysReq()
         req.bucket = bucket.name.encode()
         keys = []
@@ -681,15 +694,16 @@ class RiakPbcAsyncTransport:
         return keys
 
     def _decode_contents(self, contents, obj):
-        """
+        '''
         Decodes the list of siblings from the protobuf representation
         into the object.
+
         :param contents: a list of RpbContent messages
         :type contents: list
         :param obj: a RiakObject
         :type obj: RiakObject
         :rtype RiakObject
-        """
+        '''
         obj.siblings = [self._decode_content(c, RiakContent(obj))
                         for c in contents]
         # Invoke sibling-resolution logic
@@ -698,15 +712,16 @@ class RiakPbcAsyncTransport:
         return obj
 
     def _decode_content(self, rpb_content, sibling):
-        """
+        '''
         Decodes a single sibling from the protobuf representation into
         a RiakObject.
+
         :param rpb_content: a single RpbContent message
         :type rpb_content: riak_pb.RpbContent
         :param sibling: a RiakContent sibling container
         :type sibling: RiakContent
         :rtype: RiakContent
-        """
+        '''
 
         if rpb_content.HasField("deleted") and rpb_content.deleted:
             sibling.exists = False
@@ -739,12 +754,13 @@ class RiakPbcAsyncTransport:
         return sibling
 
     def _decode_link(self, link):
-        """
+        '''
         Decodes an RpbLink message into a tuple
+
         :param link: an RpbLink message
         :type link: riak_pb.RpbLink
         :rtype tuple
-        """
+        '''
 
         if link.HasField("bucket"):
             bucket = link.bucket

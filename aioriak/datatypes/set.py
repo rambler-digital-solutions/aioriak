@@ -6,12 +6,15 @@ from aioriak.datatypes import TYPES
 class Set(collections.Set, Datatype):
     '''A convergent datatype representing a Set with observed-remove
     semantics. Currently strings are the only supported value type.
+
     Example::
         myset.add('barista')
         myset.add('roaster')
         myset.add('brewer')
+
     Likewise they can simply be removed::
         myset.discard('barista')
+
     This datatype also implements the `Set ABC
     <https://docs.python.org/2/library/collections.html>`_, meaning it
     supports ``len()``, ``in``, and iteration.
@@ -29,9 +32,11 @@ class Set(collections.Set, Datatype):
     def add(self, element):
         '''
         Adds an element to the set.
+
         .. note: You may add elements that already exist in the set.
            This may be used as an "assertion" that the element is a
            member.
+
         :param element: the element to add
         :type element: str
         '''
@@ -41,8 +46,10 @@ class Set(collections.Set, Datatype):
     def discard(self, element):
         '''
         Removes an element from the set.
+
         .. note: You may remove elements from the set that are not
            present, but a context from the server is required.
+
         :param element: the element to remove
         :type element: str
         '''
@@ -53,6 +60,7 @@ class Set(collections.Set, Datatype):
     def to_op(self):
         '''
         Extracts the modification operation from the set.
+
         :rtype: dict, None
         '''
         if not self._adds and not self._removes:

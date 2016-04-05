@@ -41,6 +41,7 @@ class Flag(Datatype):
     def to_op(self):
         '''
         Extracts the mutation operation from the flag.
+
         :rtype: bool, None
         '''
         return self._op

@@ -36,6 +36,7 @@ class RiakObject:
     def __init__(self, client, bucket, key=None):
         '''
         Construct a new RiakObject.
+
         :param client: A RiakClient object.
         :type client: :class:`RiakClient <aioriak.client.RiakClient>`
         :param bucket: A RiakBucket object.
@@ -76,9 +77,11 @@ class RiakObject:
         Reload the object from Riak. When this operation completes, the
         object could contain new metadata and a new value, if the object
         was updated in Riak since it was last retrieved.
+
         .. note:: Even if the key is not found in Riak, this will
            return a :class:`RiakObject`. Check the :attr:`exists`
            property to see if the key was found.
+
         :rtype: :class:`RiakObject`
         '''
 
@@ -92,8 +95,7 @@ class RiakObject:
         contains a newer version of the object according to the object's
         vector clock.
 
-        :param return_body: if the newly stored object should be
-                            retrieved
+        :param return_body: if the newly stored object should be retrieved
         :type return_body: bool
         :rtype: :class:`RiakObject` '''
         if len(self.siblings) != 1:
@@ -107,9 +109,9 @@ class RiakObject:
     async def delete(self):
         '''
         Delete this object from Riak.
+
         :rtype: :class:`RiakObject`
         '''
-
         await self.client.delete(self)
         self.clear()
         return self
@@ -117,6 +119,7 @@ class RiakObject:
     def clear(self):
         '''
         Reset this object.
+
         :rtype: RiakObject
         '''
         self.siblings = []

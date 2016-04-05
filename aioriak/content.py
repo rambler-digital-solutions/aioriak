@@ -3,8 +3,7 @@ Copyright 2013 Basho Technologies, Inc.
 This file is provided to you under the Apache License,
 Version 2.0 (the "License"); you may not use this file
 except in compliance with the License.  You may obtain
-a copy of the License at
-  http://www.apache.org/licenses/LICENSE-2.0
+a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 Unless required by applicable law or agreed to in writing,
 software distributed under the License is distributed on an
 "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -72,6 +71,7 @@ class RiakContent(object):
         will result in encoding the `data` property into a string. The
         encoding is dependent on the `content_type` property and the
         bucket's registered encoders.
+
         :type str''')
 
     def _serialize(self, value):
@@ -98,6 +98,7 @@ class RiakContent(object):
         add_index(field, value)
         Tag this object with the specified field/value pair for
         indexing.
+
         :param field: The index field.
         :type field: string
         :param value: The index value.
@@ -113,16 +114,17 @@ class RiakContent(object):
         return self._robject
 
     def remove_index(self, field=None, value=None):
-        """
+        '''
         remove_index(field=None, value=None)
         Remove the specified field/value pair as an index on this
         object.
+
         :param field: The index field.
         :type field: string
         :param value: The index value.
         :type value: string or integer
         :rtype: :class:`RiakObject <riak.riak_object.RiakObject>`
-        """
+        '''
         if not field and not value:
             self.indexes.clear()
         elif field and not value:
@@ -139,25 +141,25 @@ class RiakContent(object):
     remove_indexes = remove_index
 
     def set_index(self, field, value):
-        """
-        set_index(field, value)
+        '''
         Works like :meth:`add_index`, but ensures that there is only
         one index on given field. If other found, then removes it
         first.
+
         :param field: The index field.
         :type field: string
         :param value: The index value.
         :type value: string or integer
         :rtype: :class:`RiakObject <riak.riak_object.RiakObject>`
-        """
+        '''
         to_rem = set((x for x in self.indexes if x[0] == field))
         self.indexes.difference_update(to_rem)
         return self.add_index(field, value)
 
     def add_link(self, obj, tag=None):
-        """
-        add_link(obj, tag=None)
+        '''
         Add a link to a RiakObject.
+
         :param obj: Either a RiakObject or 3 item link tuple consisting
             of (bucket, key, tag).
         :type obj: mixed
@@ -165,7 +167,7 @@ class RiakContent(object):
             if ``obj`` is a 3 item link tuple.
         :type tag: string
         :rtype: :class:`RiakObject <riak.riak_object.RiakObject>`
-        """
+        '''
         if isinstance(obj, tuple):
             newlink = obj
         else:

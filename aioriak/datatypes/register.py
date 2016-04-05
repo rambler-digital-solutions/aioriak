@@ -23,6 +23,7 @@ class Register(Sized, Datatype):
     def value(self):
         '''
         Returns a copy of the original value of the register.
+
         :rtype: str
         '''
         return self._value[:]
@@ -37,6 +38,7 @@ class Register(Sized, Datatype):
     def to_op(self):
         '''
         Extracts the mutation operation from the register.
+
         :rtype: str, None
         '''
         if self._new_value is not None:
@@ -45,6 +47,7 @@ class Register(Sized, Datatype):
     def assign(self, new_value):
         '''
         Assigns a new value to the register.
+
         :param new_value: the new value for the register
         :type new_value: str
         '''
