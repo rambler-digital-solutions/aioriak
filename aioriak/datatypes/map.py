@@ -19,6 +19,7 @@ class TypedMapView(Mapping):
         '''
         Fetches an item from the parent :class:`Map` scoped by this view's
         datatype.
+
         :param key: the key of the item
         :type key: str
         :rtype: :class:`~aioriak.datatypes.Datatype`
@@ -57,7 +58,8 @@ class TypedMapView(Mapping):
 
 
 class Map(Mapping, Datatype):
-    '''A convergent datatype that acts as a key-value datastructure. Keys
+    '''
+    A convergent datatype that acts as a key-value datastructure. Keys
     are pairs of ``(name, datatype)`` where ``name`` is a string and
     ``datatype`` is the datatype name. Values are other convergent
     datatypes, represented by any concrete type in this module.

@@ -9,8 +9,9 @@ class Bucket:
     '''
 
     def __init__(self, client, name, bucket_type):
-        """
+        '''
         Returns a new ``Bucket`` instance.
+
         :param client: A :class:`RiakClient <aioriak.client.RiakClient>`
             instance
         :type client: :class:`RiakClient <aioriak.client.RiakClient>`
@@ -18,7 +19,7 @@ class Bucket:
         :type name: string
         :param bucket_type: The parent bucket type of this bucket
         :type bucket_type: :class:`BucketType`
-        """
+        '''
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
 
@@ -55,6 +56,7 @@ class Bucket:
         '''
         Get the decoding function for the provided content type for
         this bucket.
+
         :param content_type: the requested media type
         :type content_type: str
         :rtype: function
@@ -68,6 +70,7 @@ class Bucket:
         '''
         Get the encoding function for the provided content type for
         this bucket.
+
         :param content_type: the requested media type
         :type content_type: str
         :param content_type: Content type requested
@@ -81,6 +84,7 @@ class Bucket:
         '''
         Set the encoding function for the provided content type for
         this bucket.
+
         :param content_type: the requested media type
         :type content_type: str
         :param encoder: an encoding function, takes a single object
@@ -94,6 +98,7 @@ class Bucket:
         '''
         Set the decoding function for the provided content type for
         this bucket.
+
         :param content_type: the requested media type
         :type content_type: str
         :param decoder: a decoding function, takes a string and
@@ -106,6 +111,7 @@ class Bucket:
     async def set_property(self, key, value):
         '''
         Set a bucket property.
+
         :param key: Property to set.
         :type key: string
         :param value: Property value.
@@ -116,6 +122,7 @@ class Bucket:
     async def get_property(self, key):
         '''
         Retrieve a bucket property.
+
         :param key: The property to retrieve.
         :type key: string
         :rtype: mixed
@@ -125,6 +132,7 @@ class Bucket:
     async def set_properties(self, props):
         '''
         Set multiple bucket properties in one call.
+
         :param props: A dictionary of properties
         :type props: dict
         '''
@@ -133,15 +141,17 @@ class Bucket:
     async def get_properties(self):
         '''
         Retrieve a dict of all bucket properties.
+
         :rtype: dict
         '''
         return await self._client.get_bucket_props(self)
 
     async def get_keys(self):
-        """
+        '''
         Return all keys within the bucket.
+
         :rtype: list of keys
-        """
+        '''
         return await self._client.get_keys(self)
 
     async def get(self, key):
@@ -149,6 +159,7 @@ class Bucket:
         Retrieve an :class:`~aioriak.riak_object.RiakObject` or
         :class:`~aioriak.datatypes.Datatype`, based on the presence and value
         of the :attr:`datatype <BucketType.datatype>` bucket property.
+
         :param key: Name of the key.
         :type key: string
         :rtype: :class:`RiakObject <aioriak.riak_object.RiakObject>` or
@@ -162,13 +173,15 @@ class Bucket:
 
     async def new(self, key=None, data=None, content_type='application/json',
                   encoded_data=None):
-        '''A shortcut for manually instantiating a new
+        '''
+        A shortcut for manually instantiating a new
         :class:`~aioriak.riak_object.RiakObject` or a new
         :class:`~aioriak.datatypes.Datatype`, based on the presence and value
         of the :attr:`datatype <BucketType.datatype>` bucket property. When
-        the bucket contains a :class:`~riak.datatypes.Datatype`, all
+        the bucket contains a :class:`~aioriak.datatypes.Datatype`, all
         arguments are ignored except ``key``, otherwise they are used to
-        initialize the :class:`~riak.riak_object.RiakObject`.
+        initialize the :class:`~aioriak.riak_object.RiakObject`.
+
         :param key: Name of the key. Leaving this to be None (default)
                     will make Riak generate the key on store.
         :type key: str
@@ -203,9 +216,11 @@ class Bucket:
         return obj
 
     async def delete(self, key, **kwargs):
-        '''Deletes a key from Riak. Short hand for
+        '''
+        Deletes a key from Riak. Short hand for
         ``bucket.new(key).delete()``. See :meth:`RiakClient.delete()
         <riak.client.RiakClient.delete>` for options.
+
         :param key: The key for the object
         :type key: string
         :rtype: RiakObject
@@ -226,13 +241,14 @@ class BucketType:
     properties on a Riak bucket type and access buckets within its
     namespace.
 
-    Async implementation of riak.bucket.BucketType
+    Async implementation of <riak.bucket.BucketType>
     '''
     def __init__(self, client, name):
         '''
         Returns a new ``BucketType`` instance.
+
         :param client: A :class:`RiakClient <aioriak.client.RiakClient>`
-               instance
+            instance
         :type client: :class:`RiakClient <aioriak.client.RiakClient>`
         :param name: The bucket-type's name
         :type name: string
@@ -280,6 +296,7 @@ class BucketType:
     def is_default(self):
         '''
         Whether this bucket type is the default type, or a user-defined type.
+
         :rtype: bool
         '''
         return self.name == 'default'
@@ -287,6 +304,7 @@ class BucketType:
     async def get_property(self, key):
         '''
         Retrieve a bucket-type property.
+
         :param key: The property to retrieve.
         :type key: string
         :rtype: mixed
@@ -296,6 +314,7 @@ class BucketType:
     async def set_property(self, key, value):
         '''
         Set a bucket-type property.
+
         :param key: Property to set.
         :type key: string
         :param value: Property value.
@@ -306,6 +325,7 @@ class BucketType:
     async def get_properties(self):
         '''
         Retrieve a dict of all bucket-type properties.
+
         :rtype: dict
         '''
         return await self._client.get_bucket_type_props(self)
@@ -313,6 +333,7 @@ class BucketType:
     async def set_properties(self, props):
         '''
         Set multiple bucket-type properties in one call.
+
         :param props: A dictionary of properties
         :type props: dict
         '''
@@ -321,6 +342,7 @@ class BucketType:
     def bucket(self, name):
         '''
         Gets a bucket that belongs to this bucket-type.
+
         :param name: the bucket name
         :type name: str
         :rtype: :class:`RiakBucket`
@@ -331,8 +353,10 @@ class BucketType:
         '''
         Get the list of buckets under this bucket-type as
         :class:`Bucket <aioriak.bucket.Bucket>` instances.
+
         .. warning:: Do not use this in production, as it requires
            traversing through all keys stored in a cluster.
+
         :rtype: list of :class:`Bucket <riak.bucket.Bucket>`
                 instances
         '''
@@ -341,6 +365,7 @@ class BucketType:
     async def get_datatype(self):
         '''
         The assigned datatype for this bucket type, if present.
+
         :rtype: None or string
         '''
         if not hasattr(self, '_datatype'):
