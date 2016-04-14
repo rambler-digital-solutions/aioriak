@@ -12,6 +12,24 @@ The minimal versions of Python for use with this client are Python 3.5.x.
 ```bash
 python setup.py install
 ```
+
+### Features ###
+
+| Feature            | Status|
+|--------------------|:-----:|
+| Riak KV operations |  Yes  |
+| Riak Datatypes     |  Yes  |
+| Riak BucketTypes   |  Yes  |
+| Custom resolver    |  Yes  |
+| Node list support  |   No  |
+| Custom quorum      |   No  |
+| Connections Pool   |   No  |
+| Operations timout  |   No  |
+| Security           |   No  |
+| Tested python ver. | 3.5.x |
+| Tested Riak version| 2.1.3 |
+
+
 ## Using example ##
 
 ```python
