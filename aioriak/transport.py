@@ -22,18 +22,6 @@ async def create_transport(host='localhost', port=8087, loop=None):
     return conn
 
 
-class AsyncPBStream:
-    '''
-    Used internally by RiakPbcAsyncTransport to implement streaming
-    operations. Implements the async iterator interface.
-    '''
-    async def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        raise StopIteration
-
-
 class RPBPacketParser:
     ''' Riak protobuf packet parser.'''
     HEADER_LENGTH = 4
