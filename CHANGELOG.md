@@ -1,3 +1,9 @@
+## 0.0.3 (2016-04-20)
+
+Fix:
+
+  - Fix pip install process
+
 ## 0.0.2 (2016-04-01)
 
 Features:
