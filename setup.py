@@ -4,7 +4,7 @@ from commands import (docker_build, docker_start, docker_stop, setup_riak,
 
 setup(
     name='aioriak',
-    version='0.0.3',
+    version='0.0.4',
     description='Async implementation of Riak DB python client',
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
