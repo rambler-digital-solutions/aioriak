@@ -338,8 +338,6 @@ class RiakClient:
 
     async def get_keys(self, bucket):
         '''
-            coroutine
-
         Lists all keys in a bucket.
 
         .. warning:: Do not use this in production, as it requires

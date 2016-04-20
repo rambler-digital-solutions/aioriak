@@ -7,7 +7,7 @@ Welcome to aioriak's documentation!
 ===================================
 
 Asyncio (:pep:`3156`) Riak client library.
-This library base on official Basho python client library 
+This project is based on official Bash python client library
 (https://github.com/basho/riak-python-client).
 
 Features
@@ -32,7 +32,7 @@ Tested Riak versions                `2.1.3 <travis_>`_
 Installation
 ------------
 
-The easiest way to install aioredis is by using the package on PyPi::
+The easiest way to install aioriak is by using the package on PyPi::
 
     pip install aioriak
 
@@ -40,7 +40,7 @@ Requirements
 ------------
 
 - Python >= 3.5
-- riak>=2.3.0
+- riak>=2.1.3
 
 Contribute
 ----------
@@ -54,7 +54,7 @@ some suggestions for library improvement.
 License
 -------
 
-The aioredis is offered under `MIT license`_.
+The aioriak is offered under `MIT license`_.
 
 ----
 
@@ -65,12 +65,13 @@ Contents
     :maxdepth: 4
     
     client
-    bucket
-    object
-    datatypes
-    query
-    security
-    advanced
+
+#    bucket
+#    object
+#    datatypes
+#    query
+#    security
+#    advanced
 
 Indices and tables
 ==================
