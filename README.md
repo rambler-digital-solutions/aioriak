@@ -39,3 +39,13 @@ bucket = bucket_type.bucket('example')
 obj = await bucket.get('key')
 print(obj.data)
 ```
+
+## Testing ##
+
+### Docker based testing ###
+
+You can use docker for running:
+
+```bash
+DOCKER_CLUSTER=1 python setup.py test
+```

@@ -4,11 +4,10 @@ from commands import (docker_build, docker_start, docker_stop, setup_riak,
 
 setup(
     name='aioriak',
-    version='0.0.2',
+    version='0.0.3',
     description='Async implementation of Riak DB python client',
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
-    long_description='',
     url='https://github.com/rambler-digital-solutions/aioriak',
     keywords='riak asyncio client',
     # package_dir={'': ''},
