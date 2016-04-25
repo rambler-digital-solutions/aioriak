@@ -1,3 +1,15 @@
+## 0.0.5 (2016-04-25)
+
+Fix:
+
+  - Fix Wrong message length error
+
+## 0.0.4 (2016-04-20)
+
+Fix:
+
+  - Upload into pypi
+
 ## 0.0.3 (2016-04-20)
 
 Fix:
