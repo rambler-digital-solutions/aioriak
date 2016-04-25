@@ -157,6 +157,17 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             self.assertEqual(data, json.loads(obj.encoded_data.decode()))
         self.loop.run_until_complete(go())
 
+    def test_big_object(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new(self.key_name)
+            data = '0' * 1024 * 1024
+            obj.data = data
+            await obj.store()
+            obj2 = await bucket.get(self.key_name)
+            self.assertEqual(obj2.data, data)
+        self.loop.run_until_complete(go())
+
     def test_blank_binary_204(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)

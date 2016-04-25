@@ -45,8 +45,6 @@ class RPBPacketParser:
         if len(self._data) >= self.HEADER_LENGTH:
             self._msglen, = struct.unpack(
                 '!i', self._data[:self.HEADER_LENGTH])
-            if self._msglen > 8192:
-                raise RiakError('Wrong MESSAGE_LEN %d' % self._msglen)
             self._header_parsed = True
         else:
             self._header_parsed = False
