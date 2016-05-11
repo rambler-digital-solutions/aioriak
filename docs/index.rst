@@ -65,10 +65,10 @@ Contents
     :maxdepth: 4
     
     client
+    bucket
+    object
+    datatypes
 
-#    bucket
-#    object
-#    datatypes
 #    query
 #    security
 #    advanced

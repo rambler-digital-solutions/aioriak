@@ -1,6 +1,6 @@
 .. highlight:: python
 
-.. module:: aioriak.client
+.. currentmodule:: aioriak.client
 
 ====================
 Client & Connections
@@ -27,7 +27,6 @@ ports. The below instantiation statements are all equivalent::
 Client objects
 --------------
 
-.. currentmodule:: aioriak.client
 .. autoclass:: RiakClient
 
     .. autoattribute:: resolver
@@ -54,3 +53,43 @@ that will proxy operations to the called client.
 
 .. automethod:: RiakClient.bucket_type
 .. automethod:: RiakClient.bucket
+
+----------------------
+Bucket Type Operations
+----------------------
+
+.. autocomethod:: RiakClient.get_bucket_type_props
+.. autocomethod:: RiakClient.set_bucket_type_props
+
+-----------------
+Bucket Operations
+-----------------
+
+.. autocomethod:: RiakClient.get_bucket_props
+.. autocomethod:: RiakClient.set_bucket_props
+.. autocomethod:: RiakClient.get_keys
+
+--------------------
+Key-level Operations
+--------------------
+
+.. autocomethod:: RiakClient.get
+.. autocomethod:: RiakClient.put
+.. autocomethod:: RiakClient.delete
+.. autocomethod:: RiakClient.fetch_datatype
+.. autocomethod:: RiakClient.update_datatype
+
+-------------
+Serialization
+-------------
+
+The client supports automatic transformation of Riak responses into
+Python types if encoders and decoders are registered for the
+media-types. Supported by default are ``application/json`` and
+``text/plain``.
+
+.. autofunction:: default_encoder
+.. automethod:: RiakClient.get_encoder
+.. automethod:: RiakClient.set_encoder
+.. automethod:: RiakClient.get_decoder
+.. automethod:: RiakClient.set_decoder
