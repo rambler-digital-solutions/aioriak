@@ -1,3 +1,9 @@
+## 0.1.0 (2016-05-12)
+
+Add:
+
+  - Project documentation
+
 ## 0.0.5 (2016-04-25)
 
 Fix:
