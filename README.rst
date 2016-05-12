@@ -1,10 +1,10 @@
 .. image:: https://travis-ci.org/rambler-digital-solutions/aioriak.svg?branch=master
     :target: https://travis-ci.org/rambler-digital-solutions/aioriak
-    :alt: Build Status
+    :alt: Build Status 
    
 .. image:: https://coveralls.io/repos/github/rambler-digital-solutions/aioriak/badge.svg?branch=master 
     :target: https://coveralls.io/github/rambler-digital-solutions/aioriak?branch=master
-    :alt: Coverage Status
+    :alt: Coverage Status 
 
 .. image:: https://img.shields.io/github/issues/rambler-digital-solutions/aioriak.svg
     :target: https://github.com/rambler-digital-solutions/aioriak/issues
@@ -12,7 +12,7 @@
 
 .. image:: https://badge.fury.io/py/aioriak.svg  
     :target: https://badge.fury.io/py/aioriak 
-    :alt: PyPI version
+    :alt: PyPI version 
 
 
 Asyncio (:pep:`3156`) Riak client library.
@@ -37,6 +37,10 @@ MapReduce                           No
 Tested python versions              `3.5.0, 3.5.1 <travis_>`_
 Tested Riak versions                `2.1.3, 2.1.4 <travis_>`_
 ================================  ==============================
+
+Documentation
+-------------
+You can read the docs here: `Documentation`_
 
 Installation
 ------------
@@ -91,3 +95,4 @@ The aioriak is offered under `MIT license`_.
 
 .. _MIT license: https://raw.githubusercontent.com/rambler-digital-solutions/aioriak/master/LICENSE.txt
 .. _travis: https://travis-ci.org/rambler-digital-solutions/aioriak
+.. _Documentation: http://aioriak.readthedocs.io/
