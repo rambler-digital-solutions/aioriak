@@ -1,10 +1,19 @@
-.. aioriak documentation master file, created by
-    sphinx-quickstart on Sat Apr  2 10:53:29 2016.
-    You can adapt this file completely to your liking, but it should at least
-    contain the root `toctree` directive.
+.. image:: https://travis-ci.org/rambler-digital-solutions/aioriak.svg?branch=master
+    :target: https://travis-ci.org/rambler-digital-solutions/aioriak
+    :alt: Build Status 
+   
+.. image:: https://coveralls.io/repos/github/rambler-digital-solutions/aioriak/badge.svg?branch=master 
+    :target: https://coveralls.io/github/rambler-digital-solutions/aioriak?branch=master
+    :alt: Coverage Status 
 
-Welcome to aioriak's documentation!
-===================================
+.. image:: https://img.shields.io/github/issues/rambler-digital-solutions/aioriak.svg
+    :target: https://github.com/rambler-digital-solutions/aioriak/issues
+    :alt: GitHub issues 
+
+.. image:: https://badge.fury.io/py/aioriak.svg  
+    :target: https://badge.fury.io/py/aioriak 
+    :alt: PyPI version 
+
 
 Asyncio (:pep:`3156`) Riak client library.
 This project is based on official Bash python client library
@@ -26,8 +35,12 @@ Security                            No
 Riak Search                         No
 MapReduce                           No
 Tested python versions              `3.5.0, 3.5.1 <travis_>`_
-Tested Riak versions                `2.1.3 <travis_>`_
+Tested Riak versions                `2.1.3, 2.1.4 <travis_>`_
 ================================  ==============================
+
+Documentation
+-------------
+You can read the docs here: `Documentation`_
 
 Installation
 ------------
@@ -41,6 +54,28 @@ Requirements
 
 - Python >= 3.5
 - riak>=2.1.3
+
+Using exampe
+------------
+
+.. code-block:: python
+
+    client = await RiakClient.create('localhost', loop=loop)
+    bucket_type = client.bucket_type('default')
+    bucket = bucket_type.bucket('example')
+    obj = await bucket.get('key')
+    print(obj.data)
+
+Testing
+-------
+
+Docker based testing
+--------------------
+
+You can use docker for running:
+
+.. code-block:: bash
+    DOCKER_CLUSTER=1 python setup.py test
 
 Contribute
 ----------
@@ -58,27 +93,6 @@ The aioriak is offered under `MIT license`_.
 
 ----
 
-Contents
-========
-
-.. toctree::
-    :maxdepth: 4
-    
-    client
-    bucket
-    object
-    datatypes
-
-#    query
-#    security
-#    advanced
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
 .. _MIT license: https://raw.githubusercontent.com/rambler-digital-solutions/aioriak/master/LICENSE.txt
 .. _travis: https://travis-ci.org/rambler-digital-solutions/aioriak
+.. _Documentation: http://aioriak.readthedocs.io/
