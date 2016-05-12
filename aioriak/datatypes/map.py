@@ -78,7 +78,7 @@ class Map(Mapping, Datatype):
         del map[('emails', 'set')]
 
     Convenience accessors exist that partition the map's keys by
-    datatype and implement the :class:`~collections.Mapping`
+    datatype and implement the collections.Mapping
     behavior as well as supporting deletion::
 
         map.sets['emails']

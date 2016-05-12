@@ -1,6 +1,16 @@
 from aioriak.datatypes import TYPES
 
 
+def bucket_property(name, doc=None):
+    def _prop_getter(self):
+        return self.get_property(name)
+
+    def _prop_setter(self, value):
+        return self.set_property(name, value)
+
+    return property(_prop_getter, _prop_setter, doc=doc)
+
+
 class Bucket:
     '''
     The ``Bucket`` object allows you to access and change information
@@ -51,6 +61,12 @@ class Bucket:
                         doc='''The sibling-resolution function for this
                         bucket. If the resolver is not set, the
                         client's resolver will be used.''')
+
+    allow_mult = bucket_property(
+        'allow_mult',
+        doc='''If set to True, then writes with conflicting data will be stored
+        and returned to the client.
+        :type bool: boolean''')
 
     def get_decoder(self, content_type):
         '''
@@ -229,10 +245,10 @@ class Bucket:
 
     def __repr__(self):
         if self.bucket_type.is_default():
-            return '<RiakBucket {}>'.format(self.name)
+            return '<Bucket {}>'.format(self.name)
         else:
-            return '<RiakBucket {}/{}>'.format(self.bucket_type.name,
-                                               self.name)
+            return '<Bucket {}/{}>'.format(self.bucket_type.name,
+                                           self.name)
 
 
 class BucketType:
@@ -241,7 +257,7 @@ class BucketType:
     properties on a Riak bucket type and access buckets within its
     namespace.
 
-    Async implementation of <riak.bucket.BucketType>
+    Async implementation of :class:`riak.bucket.BucketType`
     '''
     def __init__(self, client, name):
         '''
@@ -345,7 +361,7 @@ class BucketType:
 
         :param name: the bucket name
         :type name: str
-        :rtype: :class:`RiakBucket`
+        :rtype: :class:`Bucket`
         '''
         return self._client.bucket(name, self)
 
@@ -357,7 +373,7 @@ class BucketType:
         .. warning:: Do not use this in production, as it requires
            traversing through all keys stored in a cluster.
 
-        :rtype: list of :class:`Bucket <riak.bucket.Bucket>`
+        :rtype: list of :class:`Bucket <aioriak.bucket.Bucket>`
                 instances
         '''
         return await self._client.get_buckets(bucket_type=self)
