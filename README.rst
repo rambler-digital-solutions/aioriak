@@ -1,18 +1,18 @@
 .. image:: https://travis-ci.org/rambler-digital-solutions/aioriak.svg?branch=master
-:target: https://travis-ci.org/rambler-digital-solutions/aioriak
-:alt: Build Status
-
+    :target: https://travis-ci.org/rambler-digital-solutions/aioriak
+    :alt: Build Status
+   
 .. image:: https://coveralls.io/repos/github/rambler-digital-solutions/aioriak/badge.svg?branch=master 
-:target: https://coveralls.io/github/rambler-digital-solutions/aioriak?branch=master
-:alt: Coverage Status
+    :target: https://coveralls.io/github/rambler-digital-solutions/aioriak?branch=master
+    :alt: Coverage Status
 
 .. image:: https://img.shields.io/github/issues/rambler-digital-solutions/aioriak.svg
-:target: https://github.com/rambler-digital-solutions/aioriak/issues
-:alt: GitHub issues 
+    :target: https://github.com/rambler-digital-solutions/aioriak/issues
+    :alt: GitHub issues 
 
 .. image:: https://badge.fury.io/py/aioriak.svg  
-:target: https://badge.fury.io/py/aioriak 
-:alt: PyPI version
+    :target: https://badge.fury.io/py/aioriak 
+    :alt: PyPI version
 
 
 Asyncio (:pep:`3156`) Riak client library.
