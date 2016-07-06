@@ -501,7 +501,7 @@ class RiakPbcAsyncTransport:
 
     async def _stream(self, msg_code, msg=None, expect=None):
         self._writer.write(self._encode_message(msg_code, msg))
-        self._parser = self.StreamParserClass(self._reader)
+        self._parser = self.StreamParserClass(self._reader, loop=self._loop)
         responses = []
         async for code, pbo in self._parser:
             if expect is not None and code != expect:
@@ -516,7 +516,7 @@ class RiakPbcAsyncTransport:
             del self._parser
         else:
             tail = bytearray()
-        self._parser = self.ParserClass(self._reader, tail)
+        self._parser = self.ParserClass(self._reader, tail, loop=self._loop)
         code, response = await self._parser.get_pbo()
 
         if expect is not None and code != expect:

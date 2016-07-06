@@ -39,6 +39,7 @@ class AsyncUnitTestCase(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
+        asyncio.set_event_loop(None)
         self.loop = asyncio.new_event_loop()
         self.client = self.create_client()
 
