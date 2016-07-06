@@ -1,3 +1,9 @@
+## 0.1.1 (2016-05-12)
+
+Fix:
+
+  - Non default asyncio loop using
+
 ## 0.1.0 (2016-05-12)
 
 Add:

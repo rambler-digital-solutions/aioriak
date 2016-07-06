@@ -75,6 +75,7 @@ Docker based testing
 You can use docker for running:
 
 .. code-block:: bash
+
     DOCKER_CLUSTER=1 python setup.py test
 
 Contribute
