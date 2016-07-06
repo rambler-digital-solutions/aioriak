@@ -16,7 +16,7 @@
 
 
 Asyncio (:pep:`3156`) Riak client library.
-This project is based on official Bash python client library
+This project is based on official Basho python client library
 (https://github.com/basho/riak-python-client).
 
 Features
