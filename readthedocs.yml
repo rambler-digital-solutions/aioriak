@@ -1,2 +1,3 @@
-conda:
+requirements_file: requirements-dev.txt
+tconda:
   file: environment.yml
