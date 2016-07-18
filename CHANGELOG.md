@@ -1,4 +1,10 @@
-## 0.1.1 (2016-05-12)
+## 0.1.2 (2016-07-18)
+
+Fix:
+
+  - readthedocs documentation autobuild process with python3.5
+
+## 0.1.1 (2016-07-06)
 
 Fix:
 
