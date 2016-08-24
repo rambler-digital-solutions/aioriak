@@ -30,7 +30,7 @@ Custom resolver                     Yes
 Node list support                   No
 Custom quorum                       No
 Connections Pool                    No
-Operations timout                   No
+Operations timeout                  No
 Security                            No
 Riak Search                         No
 MapReduce                           No
