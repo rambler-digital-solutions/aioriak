@@ -16,7 +16,7 @@ setup(
     license='MIT',
     install_requires=[
         'python3-riak-pb==2.1.0.6',
-        'riak==2.3.0',
+        'riak==2.5.5',
     ],
     tests_require=['nose==1.3.7',
                    'coverage==4.0.3'],
