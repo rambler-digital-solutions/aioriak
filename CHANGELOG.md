@@ -1,3 +1,9 @@
+## 0.1.3 (2016-10-28)
+
+Update:
+
+  - Update official riak client requirement to 2.5.5
+
 ## 0.1.2 (2016-07-18)
 
 Fix:
