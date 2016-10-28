@@ -3,7 +3,7 @@ import asyncio
 import struct
 import riak_pb
 from riak_pb import messages
-from riak.transports.pbc import codec
+from riak.codecs import pbuf as codec
 from aioriak.content import RiakContent
 from riak.riak_object import VClock
 from riak.util import decode_index_value, bytes_to_str, str_to_bytes
