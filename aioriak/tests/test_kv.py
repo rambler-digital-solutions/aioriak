@@ -508,3 +508,89 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             buckets = await self.client.get_buckets()
             self.assertTrue(self.bucket_name in [x.name for x in buckets])
         self.loop.run_until_complete(go())
+
+    def test_index_store_and_get(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index1_int', 10))
+            obj.indexes.add(('index2_bin', 'string'))
+            await obj.store()
+
+            obj = await bucket.get('foo')
+            self.assertIn(('index1_int', 10), obj.indexes)
+            self.assertIn(('index2_bin', 'string'), obj.indexes)
+
+        self.loop.run_until_complete(go())
+
+    def test_get_index_equal(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_bin', 'a'))
+            await obj.store()
+
+            obj = await bucket.new('foo2', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_bin', 'b'))
+            await obj.store()
+
+            obj = await bucket.new('foo3', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_bin', 'c'))
+            await obj.store()
+
+            result, continuation = await bucket.get_index('index_bin', 'b')
+            self.assertIsNone(continuation)
+            self.assertEqual(result, ['foo2'])
+
+        self.loop.run_until_complete(go())
+
+    def test_get_index_range(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_int', 10))
+            await obj.store()
+
+            obj = await bucket.new('foo2', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_int', 15))
+            await obj.store()
+
+            obj = await bucket.new('foo3', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_int', 20))
+            await obj.store()
+
+            result, continuation = await bucket.get_index('index_int', 12, 17)
+            self.assertIsNone(continuation)
+            self.assertEqual(result, ['foo2'])
+
+        self.loop.run_until_complete(go())
+
+    def test_get_index_pagination(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            for n in range(50):
+                obj = await bucket.new('foo{}'.format(n), {"foo": "one", "bar": "red"})
+                obj.indexes.add(('index_int', n))
+                await obj.store()
+
+            result, continuation = await bucket.get_index('index_int', 0, 50, max_results=10)
+            self.assertIsNotNone(continuation)
+            self.assertEqual(result, ['foo{}'.format(n) for n in range(10)])
+
+            result, continuation = await bucket.get_index('index_int', 0, 50, max_results=10, continuation=continuation)
+            self.assertIsNotNone(continuation)
+            self.assertEqual(result, ['foo{}'.format(n) for n in range(10, 20)])
+
+        self.loop.run_until_complete(go())
+
+    def test_get_index_with_terms(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj.indexes.add(('index_int', 10))
+            await obj.store()
+
+            result, _ = await bucket.get_index('index_int', 0, 50, return_terms=True)
+            self.assertEqual(result, [('index_int', '10')])
+
+        self.loop.run_until_complete(go())

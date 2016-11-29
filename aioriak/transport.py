@@ -195,8 +195,11 @@ class RiakPbcAsyncTransport:
                 pb_link.tag = ''
 
         for field, value in robj.indexes:
+            if isinstance(value, int):
+                value = str(value)
+
             pair = rpb_content.indexes.add()
-            pair.key = field
+            pair.key = str_to_bytes(field)
             pair.value = value.encode()
 
         rpb_content.value = robj.encoded_data
@@ -788,7 +791,7 @@ class RiakPbcAsyncTransport:
 
         sibling.usermeta = dict([(usermd.key.decode(), usermd.value.decode())
                                  for usermd in rpb_content.usermeta])
-        sibling.indexes = set([(index.key,
+        sibling.indexes = set([(bytes_to_str(index.key),
                                 decode_index_value(index.key, index.value))
                                for index in rpb_content.indexes])
 
