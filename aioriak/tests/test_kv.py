@@ -591,6 +591,6 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             await obj.store()
 
             result, _ = await bucket.get_index('index_int', 0, 50, return_terms=True)
-            self.assertEqual(result, [('index_int', '10')])
+            self.assertEqual(result, [(10, 'foo')])
 
         self.loop.run_until_complete(go())
