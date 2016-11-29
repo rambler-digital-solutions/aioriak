@@ -393,3 +393,6 @@ class RiakClient:
         '''
 
         return await self._transport.update_datatype(datatype, **params)
+
+    async def get_index(self, bucket, index, startkey, *args, **kwargs):
+        return await self._transport.get_index(bucket, index, startkey, *args, **kwargs)

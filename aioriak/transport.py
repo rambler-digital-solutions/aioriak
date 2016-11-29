@@ -374,6 +374,63 @@ class RiakPbcAsyncTransport:
             if o in params and params[o] is not None:
                 setattr(req, o, params[o])
 
+    def _encode_index_req(self, bucket, index, startkey, endkey=None,
+                         return_terms=None, max_results=None,
+                         continuation=None, timeout=None, term_regex=None,
+                         streaming=False):
+        """
+        Encodes a secondary index request into the protobuf message.
+        :param bucket: the bucket whose index to query
+        :type bucket: Bucket
+        :param index: the index to query
+        :type index: string
+        :param startkey: the value or beginning of the range
+        :type startkey: integer, string
+        :param endkey: the end of the range
+        :type endkey: integer, string
+        :param return_terms: whether to return the index term with the key
+        :type return_terms: bool
+        :param max_results: the maximum number of results to return (page size)
+        :type max_results: integer
+        :param continuation: the opaque continuation returned from a
+            previous paginated request
+        :type continuation: string
+        :param timeout: a timeout value in milliseconds, or 'infinity'
+        :type timeout: int
+        :param term_regex: a regular expression used to filter index terms
+        :type term_regex: string
+        :param streaming: encode as streaming request
+        :type streaming: bool
+        :rtype riak_pb.riak_kv_pb2.RpbIndexReq
+        """
+        req = riak_pb.riak_kv_pb2.RpbIndexReq()
+        req.bucket = str_to_bytes(bucket.name)
+        req.index = str_to_bytes(index)
+        self._add_bucket_type(req, bucket.bucket_type)
+        if endkey is not None:
+            req.qtype = riak_pb.riak_kv_pb2.RpbIndexReq.range
+            req.range_min = str_to_bytes(str(startkey))
+            req.range_max = str_to_bytes(str(endkey))
+        else:
+            req.qtype = riak_pb.riak_kv_pb2.RpbIndexReq.eq
+            req.key = str_to_bytes(str(startkey))
+        if return_terms is not None:
+            req.return_terms = return_terms
+        if max_results:
+            req.max_results = max_results
+        if continuation:
+            req.continuation = str_to_bytes(continuation)
+        if timeout:
+            if timeout == 'infinity':
+                req.timeout = 0
+            else:
+                req.timeout = timeout
+        if term_regex:
+            req.term_regex = str_to_bytes(term_regex)
+        req.stream = streaming
+
+        return req
+
     def _decode_dt_fetch(self, resp):
         dtype = codec.DT_FETCH_TYPES.get(resp.type)
         if dtype is None:
@@ -787,6 +844,27 @@ class RiakPbcAsyncTransport:
             # so let's make sure to clear the siblings
             robj.siblings = []
         return robj
+
+    async def get_index(self, bucket, index, startkey, endkey=None,
+                        return_terms=None, max_results=None,
+                        continuation=None, timeout=None, term_regex=None):
+
+        req = self._encode_index_req(bucket, index, startkey, endkey,
+                                     return_terms, max_results,
+                                     continuation, timeout, term_regex, streaming=False)
+        msg_code, resp = await self._request(messages.MSG_CODE_INDEX_REQ, req,
+                                             messages.MSG_CODE_INDEX_RESP)
+        if return_terms and resp.results:
+            results = [(decode_index_value(index, pair.key),
+                        bytes_to_str(pair.value))
+                       for pair in resp.results]
+        else:
+            results = [bytes_to_str(key) for key in resp.keys]
+
+        if max_results is not None and resp.HasField('continuation'):
+            return results, bytes_to_str(resp.continuation)
+        else:
+            return results, None
 
     async def put(self, robj, return_body=True):
         bucket = robj.bucket

@@ -243,6 +243,13 @@ class Bucket:
         '''
         return await (await self.new(key)).delete(**kwargs)
 
+    async def get_index(self, index, startkey, endkey=None,
+                        return_terms=None, max_results=None,
+                        continuation=None, timeout=None, term_regex=None):
+
+        return await self._client.get_index(self, index, startkey, endkey, return_terms,
+                                            max_results, continuation, timeout, term_regex)
+
     def __repr__(self):
         if self.bucket_type.is_default():
             return '<Bucket {}>'.format(self.name)
