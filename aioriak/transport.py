@@ -2,6 +2,7 @@ import logging
 import asyncio
 import struct
 import riak_pb
+import json
 from riak_pb import messages
 from riak.codecs import pbuf as codec
 from aioriak.content import RiakContent
@@ -148,6 +149,43 @@ class RPBStreamParser:
         code, pbo = await parser.get_pbo()
         self._in_buf = parser.tail
         return code, pbo
+
+
+class MapRedStream:
+    """
+    Wrapper for returning streaming result of MapReduce operation to user
+    """
+    def __init__(self, stream_parser, expect=None):
+        """
+        :param stream_parser: instance of StreamParser
+        """
+        self._stream_parser = stream_parser
+        self._buf = iter([])  # initialize with empty iterator
+        self._phase = None
+        self._expect = expect
+
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return self._phase, next(self._buf)
+        except StopIteration:
+            msg_code, pbo = await self._stream_parser.__anext__()
+            if self._expect and self._expect != msg_code:
+                raise Exception('Unexpected response code ({})'.format(msg_code))
+
+            self._phase = pbo.phase
+            try:
+                self._buf = iter(json.loads(bytes_to_str(pbo.response)))
+            except ValueError:
+                raise StopAsyncIteration
+
+            try:
+                return self._phase, next(self._buf)
+            except StopIteration:
+                # usually we raise this on last part of the stream, when pbo.response is empty
+                raise StopAsyncIteration
 
 
 class RiakPbcAsyncTransport:
@@ -918,6 +956,51 @@ class RiakPbcAsyncTransport:
             messages.MSG_CODE_DEL_REQ, req,
             messages.MSG_CODE_DEL_RESP)
         return self
+
+    def _encode_mapred_req(self, inputs, query, timeout):
+        req = riak_pb.RpbMapRedReq()
+        job = {'inputs': inputs, 'query': query}
+        if timeout is not None:
+            job['timeout'] = timeout
+
+        req.request = str_to_bytes(json.dumps(job))
+        req.content_type = b'application/json'
+        return req
+
+    async def mapred(self, inputs, query, timeout):
+        """
+        Send MR Job to Server.
+        Retrieves and merge all parts of result
+
+        :param inputs: list, dict - map reduces source
+        :param query: list - map reduce phases
+        :param timeout: int, None
+        :return: list
+        """
+        req = self._encode_mapred_req(inputs, query, timeout)
+        parts = await self._stream(riak_pb.messages.MSG_CODE_MAP_RED_REQ,
+                                   req,
+                                   riak_pb.messages.MSG_CODE_MAP_RED_RESP)
+        result = [item for _, part in parts if part.response
+                  for item in json.loads(bytes_to_str(part.response))]
+        return result
+
+    async def stream_mapred(self, inputs, query, timeout):
+        """
+        Send MR Job to Server.
+        Returns stream (async iterator) with result
+
+        :param inputs: list, dict - map reduces source
+        :param query: list - map reduce phases
+        :param timeout: int, None
+        :return: async iterator
+        """
+
+        req = self._encode_mapred_req(inputs, query, timeout)
+
+        self._writer.write(self._encode_message(riak_pb.messages.MSG_CODE_MAP_RED_REQ, req))
+        self._parser = self.StreamParserClass(self._reader, loop=self._loop)
+        return MapRedStream(self._parser, expect=riak_pb.messages.MSG_CODE_MAP_RED_RESP)
 
     async def update_datatype(self, datatype, **options):
 

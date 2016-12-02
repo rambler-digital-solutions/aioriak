@@ -1,5 +1,6 @@
 from .base import IntegrationTest, AsyncUnitTestCase
 from aioriak.bucket import Bucket
+from aioriak.mapreduce import RiakMapReduce
 from aioriak.error import ConflictError
 from riak.resolver import default_resolver, last_written_resolver
 import asyncio
@@ -594,3 +595,38 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             self.assertEqual(result, [(10, 'foo')])
 
         self.loop.run_until_complete(go())
+
+    def test_map_reduce(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            await bucket.new('foo', {"foo": "one", "bar": "red"})
+            await bucket.new('foo2', {"foo": "two", "bar": "green"})
+
+            mr = RiakMapReduce(self.client)
+            mr.add_bucket(self.bucket_name)
+
+            mr.map('Riak.mapByFields', options=dict(arg={"foo": "two"}))
+
+            result = await mr.run()
+            self.assertEqual(result, [{"foo": "two", "bar": "green"}])
+
+    def test_stream_map_reduce(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            await bucket.new('foo', {"foo": "one", "bar": "red"})
+            await bucket.new('foo2', {"foo": "two", "bar": "green"})
+            await bucket.new('foo3', {"foo": "three", "bar": "red"})
+            await bucket.new('foo4', {"foo": "four", "bar": "green"})
+
+            mr = RiakMapReduce(self.client)
+            mr.add_bucket(self.bucket_name)
+
+            mr.map('Riak.mapByFields', options=dict(arg={"bar": "green"}))
+
+            ai = await mr.stream()
+
+            result = await ai.__anext__()
+            self.assertEqual(result, (0, {"foo": "two", "bar": "green"}))
+
+            result = await ai.__anext__()
+            self.assertEqual(result, (0, {"foo": "four", "bar": "green"}))
