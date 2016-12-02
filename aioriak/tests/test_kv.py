@@ -605,10 +605,11 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             mr = RiakMapReduce(self.client)
             mr.add_bucket(self.bucket_name)
 
-            mr.map('Riak.mapByFields', options=dict(arg={"foo": "two"}))
+            mr.map(['riak_kv_mapreduce', 'map_object_value'])
 
-            result = await mr.run()
-            self.assertEqual(result, [{"foo": "two", "bar": "green"}])
+            results = await mr.run()
+            self.assertIn({"foo": "one", "bar": "red"}, results)
+            self.assertIn({"foo": "two", "bar": "green"}, results)
 
         self.loop.run_until_complete(go())
 
@@ -617,13 +618,11 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             bucket = self.client.bucket(self.bucket_name)
             await (await bucket.new('foo', {"foo": "one", "bar": "red"})).store()
             await (await bucket.new('foo2', {"foo": "two", "bar": "green"})).store()
-            await (await bucket.new('foo3', {"foo": "three", "bar": "red"})).store()
-            await (await bucket.new('foo4', {"foo": "four", "bar": "green"})).store()
 
             mr = RiakMapReduce(self.client)
             mr.add_bucket(self.bucket_name)
 
-            mr.map('Riak.mapByFields', options=dict(arg={"bar": "green"}))
+            mr.map(['riak_kv_mapreduce', 'map_object_value'])
 
             stream = await mr.stream()
             results = []
@@ -631,7 +630,7 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
                 results.append(result)
 
             self.assertEqual(len(results), 2)
+            self.assertIn({"foo": "one", "bar": "red"}, results)
             self.assertIn({"foo": "two", "bar": "green"}, results)
-            self.assertIn({"foo": "four", "bar": "green"}, results)
 
         self.loop.run_until_complete(go())
