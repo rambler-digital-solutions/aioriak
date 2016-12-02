@@ -599,8 +599,8 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
     def test_map_reduce(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            await bucket.new('foo', {"foo": "one", "bar": "red"})
-            await bucket.new('foo2', {"foo": "two", "bar": "green"})
+            await (await bucket.new('foo', {"foo": "one", "bar": "red"})).store()
+            await (await bucket.new('foo2', {"foo": "two", "bar": "green"})).store()
 
             mr = RiakMapReduce(self.client)
             mr.add_bucket(self.bucket_name)
@@ -610,13 +610,15 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             result = await mr.run()
             self.assertEqual(result, [{"foo": "two", "bar": "green"}])
 
+        self.loop.run_until_complete(go())
+
     def test_stream_map_reduce(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            await bucket.new('foo', {"foo": "one", "bar": "red"})
-            await bucket.new('foo2', {"foo": "two", "bar": "green"})
-            await bucket.new('foo3', {"foo": "three", "bar": "red"})
-            await bucket.new('foo4', {"foo": "four", "bar": "green"})
+            await (await bucket.new('foo', {"foo": "one", "bar": "red"})).store()
+            await (await bucket.new('foo2', {"foo": "two", "bar": "green"})).store()
+            await (await bucket.new('foo3', {"foo": "three", "bar": "red"})).store()
+            await (await bucket.new('foo4', {"foo": "four", "bar": "green"})).store()
 
             mr = RiakMapReduce(self.client)
             mr.add_bucket(self.bucket_name)
@@ -630,3 +632,5 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
 
             result = await ai.__anext__()
             self.assertEqual(result, (0, {"foo": "four", "bar": "green"}))
+
+        self.loop.run_until_complete(go())
