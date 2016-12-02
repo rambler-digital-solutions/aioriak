@@ -625,12 +625,13 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
 
             mr.map('Riak.mapByFields', options=dict(arg={"bar": "green"}))
 
-            ai = await mr.stream()
+            stream = await mr.stream()
+            results = []
+            async for phase, result in stream:
+                results.append(result)
 
-            result = await ai.__anext__()
-            self.assertEqual(result, (0, {"foo": "two", "bar": "green"}))
-
-            result = await ai.__anext__()
-            self.assertEqual(result, (0, {"foo": "four", "bar": "green"}))
+            self.assertEqual(len(results), 2)
+            self.assertIn({"foo": "two", "bar": "green"}, results)
+            self.assertIn({"foo": "four", "bar": "green"}, results)
 
         self.loop.run_until_complete(go())
