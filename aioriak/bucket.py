@@ -246,7 +246,12 @@ class Bucket:
     async def get_index(self, index, startkey, endkey=None,
                         return_terms=None, max_results=None,
                         continuation=None, timeout=None, term_regex=None):
-
+        """
+        Queries a secondary index over objects in this bucket,
+        returning keys or index/key pairs.
+        See :meth:`RiakClient.get_index()
+        <aioriak.client.RiakClient.get_index>` for more details.
+        """
         return await self._client.get_index(self, index, startkey, endkey, return_terms,
                                             max_results, continuation, timeout, term_regex)
 
