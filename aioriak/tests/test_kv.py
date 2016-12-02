@@ -608,8 +608,8 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             mr.map(['riak_kv_mapreduce', 'map_object_value'])
 
             results = await mr.run()
-            self.assertIn({"foo": "one", "bar": "red"}, results)
-            self.assertIn({"foo": "two", "bar": "green"}, results)
+            self.assertIn(json.dumps({"foo": "one", "bar": "red"}), results)
+            self.assertIn(json.dumps({"foo": "two", "bar": "green"}), results)
 
         self.loop.run_until_complete(go())
 
@@ -630,7 +630,7 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
                 results.append(result)
 
             self.assertEqual(len(results), 2)
-            self.assertIn({"foo": "one", "bar": "red"}, results)
-            self.assertIn({"foo": "two", "bar": "green"}, results)
+            self.assertIn(json.dumps({"foo": "one", "bar": "red"}), results)
+            self.assertIn(json.dumps({"foo": "two", "bar": "green"}), results)
 
         self.loop.run_until_complete(go())
