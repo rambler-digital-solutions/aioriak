@@ -393,3 +393,31 @@ class RiakClient:
         '''
 
         return await self._transport.update_datatype(datatype, **params)
+
+    async def get_index(self, bucket, index, startkey, *args, **kwargs):
+        """
+        Queries a secondary index, returning matching keys.
+
+        :param bucket: the bucket whose index will be queried
+        :type bucket: RiakBucket
+        :param index: the index to query
+        :type index: string
+        :param startkey: the sole key to query, or beginning of the query range
+        :type startkey: string, integer
+        :param endkey: the end of the query range (optional if equality)
+        :type endkey: string, integer
+        :param return_terms: whether to include the secondary index value
+        :type return_terms: boolean
+        :param max_results: the maximum number of results to return (page size)
+        :type max_results: integer
+        :param continuation: the opaque continuation returned from a
+            previous paginated request
+        :type continuation: string
+        :param timeout: a timeout value in milliseconds, or 'infinity'
+        :type timeout: int
+        :param term_regex: a regular expression used to filter index terms
+        :type term_regex: string
+
+        :rtype: list of keys or list of pairs (index_value, key)
+        """
+        return await self._transport.get_index(bucket, index, startkey, *args, **kwargs)
