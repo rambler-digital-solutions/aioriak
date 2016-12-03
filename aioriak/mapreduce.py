@@ -36,7 +36,7 @@ class RiakMapReduce(_RiakMapReduce):
 
         # Otherwise, if the last phase IS a link phase, then convert the
         # results to link tuples.
-        a = []
+        acc = []
         for r in result:
             if len(r) == 2:
                 link = (r[0], r[1], None)
@@ -44,9 +44,9 @@ class RiakMapReduce(_RiakMapReduce):
                 link = (r[0], r[1], r[2])
             else:
                 raise ValueError('Invalid format for Link phase result')
-            a.append(link)
+            acc.append(link)
 
-        return a
+        return acc
 
     async def stream(self, timeout=None):
         """

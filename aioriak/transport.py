@@ -158,6 +158,8 @@ class MapRedStream:
     def __init__(self, stream_parser, expect=None):
         """
         :param stream_parser: instance of StreamParser
+        :param expect: expected message code for response packet
+        :type expect: int | None
         """
         self._stream_parser = stream_parser
         self._buf = iter([])  # initialize with empty iterator
@@ -972,9 +974,11 @@ class RiakPbcAsyncTransport:
         Send MR Job to Server.
         Retrieves and merge all parts of result
 
-        :param inputs: list, dict - map reduces source
-        :param query: list - map reduce phases
-        :param timeout: int, None
+        :param inputs: map reduce source
+        :type inputs: list | dict
+        :param query: map reduce phases
+        :type query: list[dict]
+        :type timeout: int | None
         :return: list
         """
         req = self._encode_mapred_req(inputs, query, timeout)
@@ -990,9 +994,11 @@ class RiakPbcAsyncTransport:
         Send MR Job to Server.
         Returns stream (async iterator) with result
 
-        :param inputs: list, dict - map reduces source
-        :param query: list - map reduce phases
-        :param timeout: int, None
+        :param inputs: map reduce source
+        :type inputs: list | dict
+        :param query: map reduce phases
+        :type query: list[dict]
+        :type timeout: int | None
         :return: async iterator
         """
 

@@ -401,22 +401,22 @@ class RiakClient:
         :param bucket: the bucket whose index will be queried
         :type bucket: RiakBucket
         :param index: the index to query
-        :type index: string
+        :type index: str
         :param startkey: the sole key to query, or beginning of the query range
-        :type startkey: string, integer
+        :type startkey: str | int
         :param endkey: the end of the query range (optional if equality)
-        :type endkey: string, integer
+        :type endkey: str | int
         :param return_terms: whether to include the secondary index value
-        :type return_terms: boolean
+        :type return_terms: bool
         :param max_results: the maximum number of results to return (page size)
-        :type max_results: integer
+        :type max_results: int
         :param continuation: the opaque continuation returned from a
             previous paginated request
-        :type continuation: string
+        :type continuation: str
         :param timeout: a timeout value in milliseconds, or 'infinity'
-        :type timeout: int
+        :type timeout: int | str
         :param term_regex: a regular expression used to filter index terms
-        :type term_regex: string
+        :type term_regex: str
 
         :rtype: list of keys or list of pairs (index_value, key)
         """
@@ -434,11 +434,11 @@ class RiakClient:
                                                        "function": "get_keys"}])
 
         :param inputs: the input list/structure
-        :type inputs: list, dict
+        :type inputs: list[str] | dict
         :param query: the list of query phases
-        :type query: list
+        :type query: list[dict]
         :param timeout: the query timeout
-        :type timeout: integer, None
+        :type timeout: int | None
         :rtype: mixed
         """
         return await self._transport.mapred(inputs, query, timeout)
@@ -459,9 +459,9 @@ class RiakClient:
                     print(phase, result)
 
         :param inputs: the input list/structure
-        :type inputs: list, dict
+        :type inputs: list[str] | dict
         :param query: the list of query phases
-        :type query: list
+        :type query: list[dict]
         :param timeout: the query timeout
         :type timeout: integer, None
         :rtype: iterator
