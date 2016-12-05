@@ -3,6 +3,7 @@ import asyncio
 import struct
 import riak_pb
 import json
+from collections import ChainMap
 from riak_pb import messages
 from riak.codecs import pbuf as codec
 from aioriak.content import RiakContent
@@ -991,7 +992,8 @@ class RiakPbcAsyncTransport:
         result = [json.loads(bytes_to_str(part.response)) for _, part in parts if part.response]
         if result and isinstance(result[0], list):
             result = sum(result, [])
-
+        if result and isinstance(result[0], dict):
+            result = dict(ChainMap(*result))
         return result
 
     async def stream_mapred(self, inputs, query, timeout):
