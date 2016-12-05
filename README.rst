@@ -34,7 +34,7 @@ Operations timeout                  No
 Security                            No
 Riak Search                         No
 MapReduce                           No
-Tested python versions              `3.5.0, 3.5.1 <travis_>`_
+Tested python versions              `3.5.0, 3.5.1, 3.5.2 <travis_>`_
 Tested Riak versions                `2.1.3, 2.1.4 <travis_>`_
 ================================  ==============================
 
