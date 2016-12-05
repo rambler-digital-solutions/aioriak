@@ -175,7 +175,8 @@ class MapRedStream:
         except StopIteration:
             msg_code, pbo = await self._stream_parser.__anext__()
             if self._expect and self._expect != msg_code:
-                raise Exception('Unexpected response code ({})'.format(msg_code))
+                raise Exception(
+                    'Unexpected response code ({})'.format(msg_code))
 
             self._phase = pbo.phase
             try:
@@ -186,7 +187,8 @@ class MapRedStream:
             try:
                 return self._phase, next(self._buf)
             except StopIteration:
-                # usually we raise this on last part of the stream, when pbo.response is empty
+                # usually we raise this on last part of the stream,
+                # when pbo.response is empty
                 raise StopAsyncIteration
 
 
@@ -418,33 +420,33 @@ class RiakPbcAsyncTransport:
                 setattr(req, o, params[o])
 
     def _encode_index_req(self, bucket, index, startkey, endkey=None,
-                         return_terms=None, max_results=None,
-                         continuation=None, timeout=None, term_regex=None,
-                         streaming=False):
+                          return_terms=None, max_results=None,
+                          continuation=None, timeout=None, term_regex=None,
+                          streaming=False):
         """
         Encodes a secondary index request into the protobuf message.
         :param bucket: the bucket whose index to query
-        :type bucket: Bucket
+        :type bucket: :class:`~aioriak.bucket.Bucket`
         :param index: the index to query
-        :type index: string
+        :type index: str
         :param startkey: the value or beginning of the range
-        :type startkey: integer, string
+        :type startkey: int, str
         :param endkey: the end of the range
-        :type endkey: integer, string
+        :type endkey: int, str
         :param return_terms: whether to return the index term with the key
         :type return_terms: bool
         :param max_results: the maximum number of results to return (page size)
-        :type max_results: integer
+        :type max_results: int
         :param continuation: the opaque continuation returned from a
             previous paginated request
-        :type continuation: string
+        :type continuation: str
         :param timeout: a timeout value in milliseconds, or 'infinity'
         :type timeout: int
         :param term_regex: a regular expression used to filter index terms
-        :type term_regex: string
+        :type term_regex: str
         :param streaming: encode as streaming request
         :type streaming: bool
-        :rtype riak_pb.riak_kv_pb2.RpbIndexReq
+        :rtype: riak_pb.riak_kv_pb2.RpbIndexReq
         """
         req = riak_pb.riak_kv_pb2.RpbIndexReq()
         req.bucket = str_to_bytes(bucket.name)
@@ -894,7 +896,8 @@ class RiakPbcAsyncTransport:
 
         req = self._encode_index_req(bucket, index, startkey, endkey,
                                      return_terms, max_results,
-                                     continuation, timeout, term_regex, streaming=False)
+                                     continuation, timeout, term_regex,
+                                     streaming=False)
         msg_code, resp = await self._request(messages.MSG_CODE_INDEX_REQ, req,
                                              messages.MSG_CODE_INDEX_RESP)
         if return_terms and resp.results:
@@ -1006,9 +1009,11 @@ class RiakPbcAsyncTransport:
 
         req = self._encode_mapred_req(inputs, query, timeout)
 
-        self._writer.write(self._encode_message(riak_pb.messages.MSG_CODE_MAP_RED_REQ, req))
+        self._writer.write(self._encode_message(
+            riak_pb.messages.MSG_CODE_MAP_RED_REQ, req))
         self._parser = self.StreamParserClass(self._reader, loop=self._loop)
-        return MapRedStream(self._parser, expect=riak_pb.messages.MSG_CODE_MAP_RED_RESP)
+        return MapRedStream(self._parser,
+                            expect=riak_pb.messages.MSG_CODE_MAP_RED_RESP)
 
     async def update_datatype(self, datatype, **options):
 

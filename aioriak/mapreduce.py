@@ -8,7 +8,8 @@ class RiakMapReduce(_RiakMapReduce):
     async def run(self, timeout=None):
         """
         Submit the map/reduce operation to Riak. Non-blocking wait for result.
-        Returns a list of results, or a list of links if the last phase is a link phase.
+        Returns a list of results,
+        or a list of links if the last phase is a link phase.
 
         Example::
                 client = await RiakClient.create()
