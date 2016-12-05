@@ -985,8 +985,10 @@ class RiakPbcAsyncTransport:
         parts = await self._stream(riak_pb.messages.MSG_CODE_MAP_RED_REQ,
                                    req,
                                    riak_pb.messages.MSG_CODE_MAP_RED_RESP)
-        result = [item for _, part in parts if part.response
-                  for item in json.loads(bytes_to_str(part.response))]
+        result = [json.loads(bytes_to_str(part.response)) for _, part in parts if part.response]
+        if result and isinstance(result[0], list):
+            result = sum(result, [])
+
         return result
 
     async def stream_mapred(self, inputs, query, timeout):
