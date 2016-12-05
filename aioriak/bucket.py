@@ -252,8 +252,9 @@ class Bucket:
         See :meth:`RiakClient.get_index()
         <aioriak.client.RiakClient.get_index>` for more details.
         """
-        return await self._client.get_index(self, index, startkey, endkey, return_terms,
-                                            max_results, continuation, timeout, term_regex)
+        return await self._client.get_index(
+            self, index, startkey, endkey, return_terms, max_results,
+            continuation, timeout, term_regex)
 
     def __repr__(self):
         if self.bucket_type.is_default():

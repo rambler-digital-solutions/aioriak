@@ -399,7 +399,7 @@ class RiakClient:
         Queries a secondary index, returning matching keys.
 
         :param bucket: the bucket whose index will be queried
-        :type bucket: RiakBucket
+        :type bucket: :class:`~aioriak.bucket.Bucket`
         :param index: the index to query
         :type index: str
         :param startkey: the sole key to query, or beginning of the query range
@@ -420,7 +420,8 @@ class RiakClient:
 
         :rtype: list of keys or list of pairs (index_value, key)
         """
-        return await self._transport.get_index(bucket, index, startkey, *args, **kwargs)
+        return await self._transport.get_index(bucket, index, startkey, *args,
+                                               **kwargs)
 
     async def mapred(self, inputs, query, timeout=None):
         """
@@ -428,10 +429,12 @@ class RiakClient:
 
         Example::
                 client = await RiakClient.create()
-                result = await client.mapred({"bucket": ["bucket_type", "bucket"]},
-                                             [{"map": {"language": "erlang",
-                                                       "module": "mr_example",
-                                                       "function": "get_keys"}])
+                result = await client.mapred(
+                    {"bucket": ["bucket_type", "bucket"]},
+                    [{"map": {
+                        "language": "erlang",
+                        "module": "mr_example",
+                        "function": "get_keys"}])
 
         :param inputs: the input list/structure
         :type inputs: list[str] | dict
@@ -450,10 +453,12 @@ class RiakClient:
 
         Example::
                 client = await RiakClient.create()
-                stream = await client.mapred({"bucket": ["bucket_type", "bucket"]},
-                             [{"map": {"language": "erlang",
-                                       "module": "mr_example",
-                                       "function": "get_keys"}])
+                stream = await client.mapred(
+                    {"bucket": ["bucket_type", "bucket"]},
+                    [{"map": {
+                        "language": "erlang",
+                        "module": "mr_example",
+                        "function": "get_keys"}])
 
                 async for phase, result in stream:
                     print(phase, result)
