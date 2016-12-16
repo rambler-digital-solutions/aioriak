@@ -2,6 +2,8 @@ import logging
 import asyncio
 import struct
 import riak_pb
+import json
+from collections import ChainMap
 from riak_pb import messages
 from riak.codecs import pbuf as codec
 from aioriak.content import RiakContent
@@ -150,6 +152,47 @@ class RPBStreamParser:
         return code, pbo
 
 
+class MapRedStream:
+    """
+    Wrapper for returning streaming result of MapReduce operation to user
+    """
+    def __init__(self, stream_parser, expect=None):
+        """
+        :param stream_parser: instance of StreamParser
+        :param expect: expected message code for response packet
+        :type expect: int | None
+        """
+        self._stream_parser = stream_parser
+        self._buf = iter([])  # initialize with empty iterator
+        self._phase = None
+        self._expect = expect
+
+    async def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return self._phase, next(self._buf)
+        except StopIteration:
+            msg_code, pbo = await self._stream_parser.__anext__()
+            if self._expect and self._expect != msg_code:
+                raise Exception(
+                    'Unexpected response code ({})'.format(msg_code))
+
+            self._phase = pbo.phase
+            try:
+                self._buf = iter(json.loads(bytes_to_str(pbo.response)))
+            except ValueError:
+                raise StopAsyncIteration
+
+            try:
+                return self._phase, next(self._buf)
+            except StopIteration:
+                # usually we raise this on last part of the stream,
+                # when pbo.response is empty
+                raise StopAsyncIteration
+
+
 class RiakPbcAsyncTransport:
     ParserClass = RPBPacketParser
     StreamParserClass = RPBStreamParser
@@ -195,8 +238,11 @@ class RiakPbcAsyncTransport:
                 pb_link.tag = ''
 
         for field, value in robj.indexes:
+            if isinstance(value, int):
+                value = str(value)
+
             pair = rpb_content.indexes.add()
-            pair.key = field
+            pair.key = str_to_bytes(field)
             pair.value = value.encode()
 
         rpb_content.value = robj.encoded_data
@@ -373,6 +419,63 @@ class RiakPbcAsyncTransport:
                   'include_context']:
             if o in params and params[o] is not None:
                 setattr(req, o, params[o])
+
+    def _encode_index_req(self, bucket, index, startkey, endkey=None,
+                          return_terms=None, max_results=None,
+                          continuation=None, timeout=None, term_regex=None,
+                          streaming=False):
+        """
+        Encodes a secondary index request into the protobuf message.
+        :param bucket: the bucket whose index to query
+        :type bucket: :class:`~aioriak.bucket.Bucket`
+        :param index: the index to query
+        :type index: str
+        :param startkey: the value or beginning of the range
+        :type startkey: int, str
+        :param endkey: the end of the range
+        :type endkey: int, str
+        :param return_terms: whether to return the index term with the key
+        :type return_terms: bool
+        :param max_results: the maximum number of results to return (page size)
+        :type max_results: int
+        :param continuation: the opaque continuation returned from a
+            previous paginated request
+        :type continuation: str
+        :param timeout: a timeout value in milliseconds, or 'infinity'
+        :type timeout: int
+        :param term_regex: a regular expression used to filter index terms
+        :type term_regex: str
+        :param streaming: encode as streaming request
+        :type streaming: bool
+        :rtype: riak_pb.riak_kv_pb2.RpbIndexReq
+        """
+        req = riak_pb.riak_kv_pb2.RpbIndexReq()
+        req.bucket = str_to_bytes(bucket.name)
+        req.index = str_to_bytes(index)
+        self._add_bucket_type(req, bucket.bucket_type)
+        if endkey is not None:
+            req.qtype = riak_pb.riak_kv_pb2.RpbIndexReq.range
+            req.range_min = str_to_bytes(str(startkey))
+            req.range_max = str_to_bytes(str(endkey))
+        else:
+            req.qtype = riak_pb.riak_kv_pb2.RpbIndexReq.eq
+            req.key = str_to_bytes(str(startkey))
+        if return_terms is not None:
+            req.return_terms = return_terms
+        if max_results:
+            req.max_results = max_results
+        if continuation:
+            req.continuation = str_to_bytes(continuation)
+        if timeout:
+            if timeout == 'infinity':
+                req.timeout = 0
+            else:
+                req.timeout = timeout
+        if term_regex:
+            req.term_regex = str_to_bytes(term_regex)
+        req.stream = streaming
+
+        return req
 
     def _decode_dt_fetch(self, resp):
         dtype = codec.DT_FETCH_TYPES.get(resp.type)
@@ -731,7 +834,7 @@ class RiakPbcAsyncTransport:
 
         sibling.usermeta = dict([(usermd.key.decode(), usermd.value.decode())
                                  for usermd in rpb_content.usermeta])
-        sibling.indexes = set([(index.key,
+        sibling.indexes = set([(bytes_to_str(index.key),
                                 decode_index_value(index.key, index.value))
                                for index in rpb_content.indexes])
 
@@ -788,6 +891,28 @@ class RiakPbcAsyncTransport:
             robj.siblings = []
         return robj
 
+    async def get_index(self, bucket, index, startkey, endkey=None,
+                        return_terms=None, max_results=None,
+                        continuation=None, timeout=None, term_regex=None):
+
+        req = self._encode_index_req(bucket, index, startkey, endkey,
+                                     return_terms, max_results,
+                                     continuation, timeout, term_regex,
+                                     streaming=False)
+        msg_code, resp = await self._request(messages.MSG_CODE_INDEX_REQ, req,
+                                             messages.MSG_CODE_INDEX_RESP)
+        if return_terms and resp.results:
+            results = [(decode_index_value(index, pair.key),
+                        bytes_to_str(pair.value))
+                       for pair in resp.results]
+        else:
+            results = [bytes_to_str(key) for key in resp.keys]
+
+        if max_results is not None and resp.HasField('continuation'):
+            return results, bytes_to_str(resp.continuation)
+        else:
+            return results, None
+
     async def put(self, robj, return_body=True):
         bucket = robj.bucket
 
@@ -837,6 +962,60 @@ class RiakPbcAsyncTransport:
             messages.MSG_CODE_DEL_REQ, req,
             messages.MSG_CODE_DEL_RESP)
         return self
+
+    def _encode_mapred_req(self, inputs, query, timeout):
+        req = riak_pb.RpbMapRedReq()
+        job = {'inputs': inputs, 'query': query}
+        if timeout is not None:
+            job['timeout'] = timeout
+
+        req.request = str_to_bytes(json.dumps(job))
+        req.content_type = b'application/json'
+        return req
+
+    async def mapred(self, inputs, query, timeout):
+        """
+        Send MR Job to Server.
+        Retrieves and merge all parts of result
+
+        :param inputs: map reduce source
+        :type inputs: list | dict
+        :param query: map reduce phases
+        :type query: list[dict]
+        :type timeout: int | None
+        :return: list
+        """
+        req = self._encode_mapred_req(inputs, query, timeout)
+        parts = await self._stream(riak_pb.messages.MSG_CODE_MAP_RED_REQ,
+                                   req,
+                                   riak_pb.messages.MSG_CODE_MAP_RED_RESP)
+        result = [json.loads(bytes_to_str(part.response)) for _, part in parts if part.response]
+        if result and isinstance(result[0], list):
+            result = sum(result, [])
+        if result and isinstance(result[0], dict):
+            result = dict(ChainMap(*result))
+        return result
+
+    async def stream_mapred(self, inputs, query, timeout):
+        """
+        Send MR Job to Server.
+        Returns stream (async iterator) with result
+
+        :param inputs: map reduce source
+        :type inputs: list | dict
+        :param query: map reduce phases
+        :type query: list[dict]
+        :type timeout: int | None
+        :return: async iterator
+        """
+
+        req = self._encode_mapred_req(inputs, query, timeout)
+
+        self._writer.write(self._encode_message(
+            riak_pb.messages.MSG_CODE_MAP_RED_REQ, req))
+        self._parser = self.StreamParserClass(self._reader, loop=self._loop)
+        return MapRedStream(self._parser,
+                            expect=riak_pb.messages.MSG_CODE_MAP_RED_RESP)
 
     async def update_datatype(self, datatype, **options):
 

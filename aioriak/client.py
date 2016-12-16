@@ -393,3 +393,83 @@ class RiakClient:
         '''
 
         return await self._transport.update_datatype(datatype, **params)
+
+    async def get_index(self, bucket, index, startkey, *args, **kwargs):
+        """
+        Queries a secondary index, returning matching keys.
+
+        :param bucket: the bucket whose index will be queried
+        :type bucket: :class:`~aioriak.bucket.Bucket`
+        :param index: the index to query
+        :type index: str
+        :param startkey: the sole key to query, or beginning of the query range
+        :type startkey: str | int
+        :param endkey: the end of the query range (optional if equality)
+        :type endkey: str | int
+        :param return_terms: whether to include the secondary index value
+        :type return_terms: bool
+        :param max_results: the maximum number of results to return (page size)
+        :type max_results: int
+        :param continuation: the opaque continuation returned from a
+            previous paginated request
+        :type continuation: str
+        :param timeout: a timeout value in milliseconds, or 'infinity'
+        :type timeout: int | str
+        :param term_regex: a regular expression used to filter index terms
+        :type term_regex: str
+
+        :rtype: list of keys or list of pairs (index_value, key)
+        """
+        return await self._transport.get_index(bucket, index, startkey, *args,
+                                               **kwargs)
+
+    async def mapred(self, inputs, query, timeout=None):
+        """
+        Executes a MapReduce query.
+
+        Example::
+                client = await RiakClient.create()
+                result = await client.mapred(
+                    {"bucket": ["bucket_type", "bucket"]},
+                    [{"map": {
+                        "language": "erlang",
+                        "module": "mr_example",
+                        "function": "get_keys"}])
+
+        :param inputs: the input list/structure
+        :type inputs: list[str] | dict
+        :param query: the list of query phases
+        :type query: list[dict]
+        :param timeout: the query timeout
+        :type timeout: int | None
+        :rtype: mixed
+        """
+        return await self._transport.mapred(inputs, query, timeout)
+
+    async def stream_mapred(self, inputs, query, timeout=None):
+        """
+        Streams a MapReduce query as (phase, data) pairs.
+        Returns async iterator.
+
+        Example::
+                client = await RiakClient.create()
+                stream = await client.mapred(
+                    {"bucket": ["bucket_type", "bucket"]},
+                    [{"map": {
+                        "language": "erlang",
+                        "module": "mr_example",
+                        "function": "get_keys"}])
+
+                async for phase, result in stream:
+                    print(phase, result)
+
+        :param inputs: the input list/structure
+        :type inputs: list[str] | dict
+        :param query: the list of query phases
+        :type query: list[dict]
+        :param timeout: the query timeout
+        :type timeout: integer, None
+        :rtype: iterator
+        """
+
+        return await self._transport.stream_mapred(inputs, query, timeout)
