@@ -1,5 +1,6 @@
 import logging
 import json
+import random
 from weakref import WeakValueDictionary
 from .transport import create_transport
 from .bucket import BucketType, Bucket
@@ -56,7 +57,10 @@ class RiakClient:
     or by using the methods on related objects.
     '''
     def __init__(self, host='localhost', port=8087, loop=None):
-        self._host = host
+        if isinstance(host, (list, tuple, set)):
+            self._host = random.choice(host)
+        else:
+            self._host = host
         self._port = port
         self._loop = loop
         self._bucket_types = WeakValueDictionary()
@@ -153,7 +157,7 @@ class RiakClient:
             loop.run_until_complete(go())
 
         :param host: Hostname or ip address of Riak instance
-        :type host: str
+        :type host: str, list, tuple
         :param port: Port of riak instance
         :type port: int
         :param loop: asyncio event loop
