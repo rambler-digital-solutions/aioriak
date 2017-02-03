@@ -989,7 +989,8 @@ class RiakPbcAsyncTransport:
         parts = await self._stream(riak_pb.messages.MSG_CODE_MAP_RED_REQ,
                                    req,
                                    riak_pb.messages.MSG_CODE_MAP_RED_RESP)
-        result = [json.loads(bytes_to_str(part.response)) for _, part in parts if part.response]
+        result = [json.loads(
+            bytes_to_str(part.response)) for _, part in parts if part.response]
         if result and isinstance(result[0], list):
             result = sum(result, [])
         if result and isinstance(result[0], dict):
