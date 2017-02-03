@@ -1,3 +1,11 @@
+## 0.1.4 (2017-02-03)
+
+Add:
+
+  - Initial MapReduce support
+  - initial Secondary Indexes 2i
+  - Add hostlist initial support
+
 ## 0.1.3 (2016-10-28)
 
 Update:
