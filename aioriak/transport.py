@@ -643,7 +643,9 @@ class RiakPbcAsyncTransport:
         return self._parser.msg_code, self._parser.msg
 
     def close(self):
-        self._writer.close()
+        if self._writer:
+            self._writer.close()
+            del self._writer
 
     async def ping(self):
         code, res = await self._request(messages.MSG_CODE_PING_REQ)
