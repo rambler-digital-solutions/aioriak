@@ -74,6 +74,11 @@ class RiakClient:
                           'text/json': binary_json_encoder,
                           'text/plain': str_to_bytes,
                           'binary/octet-stream': binary_encoder_decoder}
+        self._closed = False
+
+    def __del__(self):
+        print('RiakClient.__del__ triggered')
+        self.close()
 
     def get_decoder(self, content_type):
         '''
@@ -133,7 +138,9 @@ class RiakClient:
                         Defaults to :func:`riak.resolver.default_resolver`.''')
 
     def close(self):
-        self._transport.close()
+        if not self._closed:
+            self._closed = True
+            self._transport.close()
 
     async def _create_transport(self):
         self._transport = await create_transport(
