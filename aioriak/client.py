@@ -77,7 +77,6 @@ class RiakClient:
         self._closed = False
 
     def __del__(self):
-        print('RiakClient.__del__ triggered')
         self.close()
 
     def get_decoder(self, content_type):
