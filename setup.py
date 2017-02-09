@@ -4,7 +4,7 @@ from commands import (docker_build, docker_start, docker_stop, setup_riak,
 
 setup(
     name='aioriak',
-    version='0.1.4',
+    version='0.1.5',
     description='Async implementation of Riak DB python client',
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
@@ -15,8 +15,7 @@ setup(
     zip_safe=False,
     license='MIT',
     install_requires=[
-        'python3-riak-pb==2.1.0.6',
-        'riak==2.5.5',
+        'riak==2.7.0',
     ],
     tests_require=['nose==1.3.7',
                    'coverage==4.0.3'],
