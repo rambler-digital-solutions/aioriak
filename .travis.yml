@@ -18,7 +18,7 @@ python:
   - '3.6.0'
 
 install:
-  - python setup.py develop
+  - pip install .
   - pip install coveralls
 
 script:
