@@ -1,3 +1,20 @@
+## 0.1.5 (2017-02-09)
+
+Add:
+
+  - Python 3.6 support
+  
+Update:
+
+  - riak requirement to 2.7.0
+
+Remove: 
+  
+  - python3-riak-pb requirement
+
+Fix:
+  - readthedocs doc building process
+
 ## 0.1.4 (2017-02-03)
 
 Add:
