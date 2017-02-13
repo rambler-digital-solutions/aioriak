@@ -121,8 +121,8 @@ written again. How you choose to resolve the conflict is up to you,
 but you can automate the process using a :attr:`resolver
 <RiakObject.resolver>` function.
 
-.. autofunction:: riak.resolver.default_resolver
-.. autofunction:: riak.resolver.last_written_resolver
+.. autofunction:: aioriak.resolver.default_resolver
+.. autofunction:: aioriak.resolver.last_written_resolver
 
 If you do not supply a resolver function, or your resolver leaves
 multiple siblings present, accessing the :ref:`object_accessors` will
