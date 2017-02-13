@@ -6,8 +6,8 @@ Values & Objects
 
 Keys in Riak are namespaced into :class:`buckets
 <aioriak.bucket.Bucket>`, and their associated values are represented
-by :class:`objects <RiakObject>`, not to be confused with Python
-"objects". A :class:`RiakObject` is a container for the key, the
+by :class:`objects <aioriak.riak_object.RiakObject>`, not to be confused with Python
+"objects". A :class:`aioriak.riak_object.RiakObject` is a container for the key, the
 :ref:`vclock`, the value(s) and any metadata associated with the
 value(s).
 
@@ -126,6 +126,6 @@ but you can automate the process using a :attr:`resolver
 
 If you do not supply a resolver function, or your resolver leaves
 multiple siblings present, accessing the :ref:`object_accessors` will
-result in a :exc:`ConflictError <riak.ConflictError>` being raised.
+result in a :exc:`ConflictError <aioriak.error.ConflictError>` being raised.
 
 .. autoexception:: aioriak.error.ConflictError

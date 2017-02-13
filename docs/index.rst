@@ -18,15 +18,15 @@ Riak KV operations                  Yes
 Riak Datatypes                      Yes
 Riak BucketTypes                    Yes
 Custom resolver                     Yes
-Node list support                   No
+Node list support                   WIP
 Custom quorum                       No
 Connections Pool                    No
 Operations timout                   No
 Security                            No
-Riak Search                         No
-MapReduce                           No
-Tested python versions              `3.5.0, 3.5.1 <travis_>`_
-Tested Riak versions                `2.1.3 <travis_>`_
+Riak Search                         WIP
+MapReduce                           WIP
+Tested python versions              `3.5, 3.6 <travis_>`__
+Tested Riak versions                `2.1.3, 2.1.4 <travis_>`__
 ================================  ==============================
 
 Installation
@@ -40,7 +40,7 @@ Requirements
 ------------
 
 - Python >= 3.5
-- riak>=2.1.3
+- riak==2.7.0
 
 Contribute
 ----------

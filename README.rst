@@ -27,13 +27,13 @@ Riak KV operations                  Yes
 Riak Datatypes                      Yes
 Riak BucketTypes                    Yes
 Custom resolver                     Yes
-Node list support                   No
+Node list support                   WIP
 Custom quorum                       No
 Connections Pool                    No
 Operations timeout                  No
 Security                            No
-Riak Search                         No
-MapReduce                           No
+Riak Search                         WIP
+MapReduce                           WIP
 Tested python versions              `3.5, 3.6 <travis_>`__
 Tested Riak versions                `2.1.3, 2.1.4 <travis_>`__
 ================================  ==============================

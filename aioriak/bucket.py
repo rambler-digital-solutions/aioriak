@@ -235,7 +235,7 @@ class Bucket:
         '''
         Deletes a key from Riak. Short hand for
         ``bucket.new(key).delete()``. See :meth:`RiakClient.delete()
-        <riak.client.RiakClient.delete>` for options.
+        <aioriak.client.RiakClient.delete>` for options.
 
         :param key: The key for the object
         :type key: string
@@ -270,7 +270,7 @@ class BucketType:
     properties on a Riak bucket type and access buckets within its
     namespace.
 
-    Async implementation of :class:`riak.bucket.BucketType`
+    Async implementation of :class:`BucketType<riak:bucket.BucketType>`
     '''
     def __init__(self, client, name):
         '''
