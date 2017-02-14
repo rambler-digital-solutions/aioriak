@@ -2,7 +2,7 @@ from .base import IntegrationTest, AsyncUnitTestCase
 from aioriak.bucket import Bucket
 from aioriak.mapreduce import RiakMapReduce
 from aioriak.error import ConflictError
-from riak.resolver import default_resolver, last_written_resolver
+from aioriak.resolver import default_resolver, last_written_resolver
 import asyncio
 import json
 import pickle
