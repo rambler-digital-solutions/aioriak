@@ -271,7 +271,7 @@ class BucketType:
     properties on a Riak bucket type and access buckets within its
     namespace.
 
-    Async implementation of :class:`BucketType<riak.bucket.BucketType>`
+    Async implementation of riak.bucket.BucketType
     '''
     def __init__(self, client, name):
         '''
