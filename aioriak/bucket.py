@@ -193,9 +193,10 @@ class Bucket:
         A shortcut for manually instantiating a new
         :class:`~aioriak.riak_object.RiakObject` or a new
         :class:`~aioriak.datatypes.Datatype`, based on the presence and value
-        of the :attr:`datatype <BucketType.datatype>` bucket property. When
-        the bucket contains a :class:`~aioriak.datatypes.Datatype`, all
-        arguments are ignored except ``key``, otherwise they are used to
+        of the :attr:`datatype <aioriak.bucket.BucketType.datatype>` bucket
+        property. When the bucket contains a
+        :class:`~aioriak.datatypes.Datatype`, all arguments are ignored except
+        ``key``, otherwise they are used to
         initialize the :class:`~aioriak.riak_object.RiakObject`.
 
         :param key: Name of the key. Leaving this to be None (default)
@@ -235,7 +236,7 @@ class Bucket:
         '''
         Deletes a key from Riak. Short hand for
         ``bucket.new(key).delete()``. See :meth:`RiakClient.delete()
-        <riak.client.RiakClient.delete>` for options.
+        <aioriak.client.RiakClient.delete>` for options.
 
         :param key: The key for the object
         :type key: string
@@ -270,7 +271,7 @@ class BucketType:
     properties on a Riak bucket type and access buckets within its
     namespace.
 
-    Async implementation of :class:`riak.bucket.BucketType`
+    Async implementation of riak.bucket.BucketType
     '''
     def __init__(self, client, name):
         '''

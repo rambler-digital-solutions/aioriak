@@ -1,11 +1,26 @@
 from setuptools import setup, find_packages
+import codecs
+import os
 from commands import (docker_build, docker_start, docker_stop, setup_riak,
                       create_bucket_types, Test)
 
+
+HERE = os.path.abspath(os.path.dirname(__file__))
+
+
+def read(*parts):
+    """
+    Build an absolute path from *parts* and and return the contents of the
+    resulting file.  Assume UTF-8 encoding.
+    """
+    with codecs.open(os.path.join(HERE, *parts), "rb", "utf-8") as f:
+        return f.read()
+
 setup(
     name='aioriak',
-    version='0.1.6',
+    version='0.1.7',
     description='Async implementation of Riak DB python client',
+    long_description=read("README.rst"),
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
     url='https://github.com/rambler-digital-solutions/aioriak',

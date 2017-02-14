@@ -30,10 +30,10 @@ If Bucket Types are not specified, the *default* bucket
 type is used.  These buckets should be created via the :meth:`bucket()
 <aioriak.client.RiakClient.bucket>` method on the client object, like so::
 
-    import riak
+    import aioriak
 
     async def go():
-        client = await riak.RiakClient.create()
+        client = await aioriak.RiakClient.create()
         mybucket = client.bucket('mybucket')
 
 Buckets with a user-specified Bucket Type can also be created via the same

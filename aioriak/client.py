@@ -4,7 +4,7 @@ import random
 from weakref import WeakValueDictionary
 from .transport import create_transport
 from .bucket import BucketType, Bucket
-from riak.resolver import default_resolver
+from aioriak.resolver import default_resolver
 from riak.util import bytes_to_str, str_to_bytes
 from aioriak.datatypes import TYPES
 
@@ -134,7 +134,8 @@ class RiakClient:
 
     resolver = property(_get_resolver, _set_resolver,
                         doc='''The sibling-resolution function for this client.
-                        Defaults to :func:`riak.resolver.default_resolver`.''')
+                        Defaults to :func:`aioriak.resolver.default_resolver`.
+                        ''')
 
     def close(self):
         if not self._closed:
