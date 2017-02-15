@@ -53,7 +53,7 @@ Requirements
 ------------
 
 - Python >= 3.5
-- riak>=2.1.3
+- riak>=2.7.0
 
 Using exampe
 ------------
