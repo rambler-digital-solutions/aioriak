@@ -95,7 +95,7 @@ class RPBPacketParser:
         return pbo
 
     def at_eof(self):
-        return self._eof
+        return self._eof or self._reader.at_eof()
 
     async def get_pbo(self):
         if self._parse_header():
@@ -112,6 +112,8 @@ class RPBPacketParser:
                 self._parse_msg()
                 self._grow_tail()
                 return self.msg_code, self.msg
+
+        raise RiakError('Incomplete message')
 
 
 class RPBStreamParser:

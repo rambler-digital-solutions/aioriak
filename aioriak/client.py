@@ -255,12 +255,12 @@ class RiakClient:
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
 
-        if name in self._bucket_types:
-            return self._bucket_types[name]
-        else:
+        btype = self._bucket_types.get(name)
+        if not btype:
             btype = BucketType(self, name)
             self._bucket_types[name] = btype
             return btype
+        return btype
 
     def bucket(self, name, bucket_type='default'):
         '''
@@ -291,8 +291,11 @@ class RiakClient:
             raise TypeError('bucket_type must be a string '
                             'or aioriak.bucket.BucketType')
 
-        return self._buckets.setdefault((bucket_type, name),
-                                        Bucket(self, name, bucket_type))
+        bucket = self._buckets.get((bucket_type, name))
+        if not bucket:
+            bucket = Bucket(self, name, bucket_type)
+            self._buckets[(bucket_type, name)] = bucket
+        return bucket
 
     async def get_bucket_type_props(self, bucket_type):
         '''
