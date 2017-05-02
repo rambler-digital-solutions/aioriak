@@ -27,20 +27,20 @@ Riak KV operations                  Yes
 Riak Datatypes                      Yes
 Riak BucketTypes                    Yes
 Custom resolver                     Yes
-Node list support                   No
+Node list support                   WIP
 Custom quorum                       No
 Connections Pool                    No
 Operations timeout                  No
 Security                            No
-Riak Search                         No
-MapReduce                           No
-Tested python versions              `3.5.0, 3.5.1 <travis_>`_
-Tested Riak versions                `2.1.3, 2.1.4 <travis_>`_
+Riak Search                         WIP
+MapReduce                           WIP
+Tested python versions              `3.5, 3.6 <travis_>`__
+Tested Riak versions                `2.1.3, 2.1.4 <travis_>`__
 ================================  ==============================
 
 Documentation
 -------------
-You can read the docs here: `Documentation`_
+You can read the docs here: `Documentation <Docs_>`__
 
 Installation
 ------------
@@ -96,4 +96,4 @@ The aioriak is offered under `MIT license`_.
 
 .. _MIT license: https://raw.githubusercontent.com/rambler-digital-solutions/aioriak/master/LICENSE.txt
 .. _travis: https://travis-ci.org/rambler-digital-solutions/aioriak
-.. _Documentation: http://aioriak.readthedocs.io/
+.. _Docs: http://aioriak.readthedocs.io/

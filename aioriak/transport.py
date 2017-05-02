@@ -1,10 +1,12 @@
 import logging
 import asyncio
 import struct
-import riak_pb
 import json
+from riak.pb import riak_pb2
+from riak.pb import riak_dt_pb2
+from riak.pb import riak_kv_pb2
 from collections import ChainMap
-from riak_pb import messages
+from riak.pb import messages
 from riak.codecs import pbuf as codec
 from aioriak.content import RiakContent
 from riak.riak_object import VClock
@@ -213,7 +215,7 @@ class RiakPbcAsyncTransport:
         :param robj: a RiakObject
         :type robj: RiakObject
         :param rpb_content: the protobuf message to fill
-        :type rpb_content: riak_pb.RpbContent
+        :type rpb_content: riak_pb2.RpbContent
         '''
         if robj.content_type:
             rpb_content.content_type = robj.content_type.encode()
@@ -256,7 +258,7 @@ class RiakPbcAsyncTransport:
         :param props: bucket properties
         :type props: dict
         :param msg: the protobuf message to fill
-        :type msg: riak_pb.RpbSetBucketReq
+        :type msg: riak_pb2.RpbSetBucketReq
         '''
         for prop in codec.NORMAL_PROPS:
             if prop in props and props[prop] is not None:
@@ -303,8 +305,8 @@ class RiakPbcAsyncTransport:
         :param hook: the hook to encode
         :type hook: dict
         :param msg: the protobuf message to fill
-        :type msg: riak_pb.RpbCommitHook
-        :rtype riak_pb.RpbCommitHook
+        :type msg: riak_pb2.RpbCommitHook
+        :rtype riak_pb2.RpbCommitHook
         '''
         if 'name' in hook:
             msg.name = hook['name']
@@ -320,11 +322,11 @@ class RiakPbcAsyncTransport:
         :param props: the module/function pair
         :type props: dict
         :param msg: the protobuf message to fill
-        :type msg: riak_pb.RpbModFun
-        :rtype riak_pb.RpbModFun
+        :type msg: riak_pb2.RpbModFun
+        :rtype riak_pb2.RpbModFun
         '''
         if msg is None:
-            msg = riak_pb.RpbModFun()
+            msg = riak_pb2.RpbModFun()
         msg.module = props['mod'].encode()
         msg.function = props['fun'].encode()
         return msg
@@ -408,9 +410,9 @@ class RiakPbcAsyncTransport:
             msg.register_op = str_to_bytes(op[1])
         elif dtype == 'flag':
             if op == 'enable':
-                msg.flag_op = riak_pb.MapUpdate.ENABLE
+                msg.flag_op = riak_dt_pb2.MapUpdate.ENABLE
             else:
-                msg.flag_op = riak_pb.MapUpdate.DISABLE
+                msg.flag_op = riak_dt_pb2.MapUpdate.DISABLE
 
     def _encode_dt_options(self, req, params):
         for q in ['r', 'pr', 'w', 'dw', 'pw']:
@@ -449,18 +451,18 @@ class RiakPbcAsyncTransport:
         :type term_regex: str
         :param streaming: encode as streaming request
         :type streaming: bool
-        :rtype: riak_pb.riak_kv_pb2.RpbIndexReq
+        :rtype: riak_kv_pb2.RpbIndexReq
         """
-        req = riak_pb.riak_kv_pb2.RpbIndexReq()
+        req = riak_kv_pb2.RpbIndexReq()
         req.bucket = str_to_bytes(bucket.name)
         req.index = str_to_bytes(index)
         self._add_bucket_type(req, bucket.bucket_type)
         if endkey is not None:
-            req.qtype = riak_pb.riak_kv_pb2.RpbIndexReq.range
+            req.qtype = riak_kv_pb2.RpbIndexReq.range
             req.range_min = str_to_bytes(str(startkey))
             req.range_max = str_to_bytes(str(endkey))
         else:
-            req.qtype = riak_pb.riak_kv_pb2.RpbIndexReq.eq
+            req.qtype = riak_kv_pb2.RpbIndexReq.eq
             req.key = str_to_bytes(str(startkey))
         if return_terms is not None:
             req.return_terms = return_terms
@@ -527,7 +529,7 @@ class RiakPbcAsyncTransport:
         Decodes the protobuf bucket properties message into a dict.
 
         :param msg: the protobuf message to decode
-        :type msg: riak_pb.RpbBucketProps
+        :type msg: riak_pb2.RpbBucketProps
         :rtype dict
         '''
         props = {}
@@ -570,7 +572,7 @@ class RiakPbcAsyncTransport:
         bucket properties.
 
         :param hook: the hook to decode
-        :type hook: riak_pb.RpbCommitHook
+        :type hook: riak_pb2.RpbCommitHook
         :rtype dict
         '''
         if hook.HasField('modfun'):
@@ -584,7 +586,7 @@ class RiakPbcAsyncTransport:
         'fun' keys. Used in bucket properties.
 
         :param modfun: the protobuf message to decode
-        :type modfun: riak_pb.RpbModFun
+        :type modfun: riak_pb2.RpbModFun
         :rtype dict
         '''
         return {'mod': modfun.module.decode(),
@@ -645,7 +647,9 @@ class RiakPbcAsyncTransport:
         return self._parser.msg_code, self._parser.msg
 
     def close(self):
-        self._writer.close()
+        if self._writer:
+            self._writer.close()
+            del self._writer
 
     async def ping(self):
         code, res = await self._request(messages.MSG_CODE_PING_REQ)
@@ -666,7 +670,7 @@ class RiakPbcAsyncTransport:
         return self._decode_pbo(res)['client_id']
 
     async def set_client_id(self, client_id):
-        req = riak_pb.RpbSetClientIdReq()
+        req = riak_kv_pb2.RpbSetClientIdReq()
         req.client_id = client_id
 
         code, res = await self._request(
@@ -685,7 +689,7 @@ class RiakPbcAsyncTransport:
                instance
         :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
         '''
-        req = riak_pb.RpbGetBucketTypeReq()
+        req = riak_pb2.RpbGetBucketTypeReq()
         req.type = bucket_type.name.encode()
 
         msg_code, resp = await self._request(
@@ -698,7 +702,7 @@ class RiakPbcAsyncTransport:
         if bucket.bucket_type.is_default():
             raise NotImplementedError('Datatypes cannot be used in the default'
                                       ' bucket-type.')
-        req = riak_pb.DtFetchReq()
+        req = riak_dt_pb2.DtFetchReq()
         req.type = bucket.bucket_type.name.encode()
         req.bucket = bucket.name.encode()
         req.key = key.encode()
@@ -713,7 +717,7 @@ class RiakPbcAsyncTransport:
         '''
         Serialize bucket property request and deserialize response
         '''
-        req = riak_pb.RpbGetBucketReq()
+        req = riak_pb2.RpbGetBucketReq()
         req.bucket = str_to_bytes(bucket.name)
         self._add_bucket_type(req, bucket.bucket_type)
 
@@ -731,7 +735,7 @@ class RiakPbcAsyncTransport:
                instance
         :type bucket_type: :class:`BucketType <aioriak.bucket.BucketType>`
         '''
-        req = riak_pb.RpbSetBucketTypeReq()
+        req = riak_pb2.RpbSetBucketTypeReq()
         req.type = bucket_type.name.encode()
 
         self._encode_bucket_props(props, req)
@@ -745,7 +749,7 @@ class RiakPbcAsyncTransport:
         '''
         Serialize set bucket property request and deserialize response
         '''
-        req = riak_pb.RpbSetBucketReq()
+        req = riak_pb2.RpbSetBucketReq()
         req.bucket = str_to_bytes(bucket.name)
         self._add_bucket_type(req, bucket.bucket_type)
 
@@ -761,7 +765,7 @@ class RiakPbcAsyncTransport:
             req.type = bucket_type.name.encode()
 
     async def get_buckets(self, bucket_type=None):
-        req = riak_pb.RpbListBucketsReq()
+        req = riak_kv_pb2.RpbListBucketsReq()
         if bucket_type:
             self._add_bucket_type(req, bucket_type)
         code, res = await self._request(messages.MSG_CODE_LIST_BUCKETS_REQ,
@@ -773,7 +777,7 @@ class RiakPbcAsyncTransport:
         '''
         Lists all keys within a bucket.
         '''
-        req = riak_pb.RpbListKeysReq()
+        req = riak_kv_pb2.RpbListKeysReq()
         req.bucket = bucket.name.encode()
         keys = []
         self._add_bucket_type(req, bucket.bucket_type)
@@ -808,7 +812,7 @@ class RiakPbcAsyncTransport:
         a RiakObject.
 
         :param rpb_content: a single RpbContent message
-        :type rpb_content: riak_pb.RpbContent
+        :type rpb_content: riak_pb2.RpbContent
         :param sibling: a RiakContent sibling container
         :type sibling: RiakContent
         :rtype: RiakContent
@@ -849,7 +853,7 @@ class RiakPbcAsyncTransport:
         Decodes an RpbLink message into a tuple
 
         :param link: an RpbLink message
-        :type link: riak_pb.RpbLink
+        :type link: riak_pb2.RpbLink
         :rtype tuple
         '''
 
@@ -874,7 +878,7 @@ class RiakPbcAsyncTransport:
         '''
         bucket = robj.bucket
 
-        req = riak_pb.RpbGetReq()
+        req = riak_kv_pb2.RpbGetReq()
         req.bucket = bucket.name.encode()
         self._add_bucket_type(req, bucket.bucket_type)
         req.key = robj.key.encode()
@@ -918,7 +922,7 @@ class RiakPbcAsyncTransport:
     async def put(self, robj, return_body=True):
         bucket = robj.bucket
 
-        req = riak_pb.RpbPutReq()
+        req = riak_kv_pb2.RpbPutReq()
 
         if return_body:
             req.return_body = 1
@@ -949,7 +953,7 @@ class RiakPbcAsyncTransport:
         return robj
 
     async def delete(self, robj):
-        req = riak_pb.RpbDelReq()
+        req = riak_kv_pb2.RpbDelReq()
 
         use_vclocks = (hasattr(robj, 'vclock') and robj.vclock)
         if use_vclocks:
@@ -966,7 +970,7 @@ class RiakPbcAsyncTransport:
         return self
 
     def _encode_mapred_req(self, inputs, query, timeout):
-        req = riak_pb.RpbMapRedReq()
+        req = riak_kv_pb2.RpbMapRedReq()
         job = {'inputs': inputs, 'query': query}
         if timeout is not None:
             job['timeout'] = timeout
@@ -988,10 +992,11 @@ class RiakPbcAsyncTransport:
         :return: list
         """
         req = self._encode_mapred_req(inputs, query, timeout)
-        parts = await self._stream(riak_pb.messages.MSG_CODE_MAP_RED_REQ,
+        parts = await self._stream(messages.MSG_CODE_MAP_RED_REQ,
                                    req,
-                                   riak_pb.messages.MSG_CODE_MAP_RED_RESP)
-        result = [json.loads(bytes_to_str(part.response)) for _, part in parts if part.response]
+                                   messages.MSG_CODE_MAP_RED_RESP)
+        result = [json.loads(
+            bytes_to_str(part.response)) for _, part in parts if part.response]
         if result and isinstance(result[0], list):
             result = sum(result, [])
         if result and isinstance(result[0], dict):
@@ -1014,10 +1019,10 @@ class RiakPbcAsyncTransport:
         req = self._encode_mapred_req(inputs, query, timeout)
 
         self._writer.write(self._encode_message(
-            riak_pb.messages.MSG_CODE_MAP_RED_REQ, req))
+            messages.MSG_CODE_MAP_RED_REQ, req))
         self._parser = self.StreamParserClass(self._reader, loop=self._loop)
         return MapRedStream(self._parser,
-                            expect=riak_pb.messages.MSG_CODE_MAP_RED_RESP)
+                            expect=messages.MSG_CODE_MAP_RED_RESP)
 
     async def update_datatype(self, datatype, **options):
 
@@ -1031,7 +1036,7 @@ class RiakPbcAsyncTransport:
             raise ValueError("No operation to send on datatype {!r}".
                              format(datatype))
 
-        req = riak_pb.DtUpdateReq()
+        req = riak_dt_pb2.DtUpdateReq()
         req.bucket = str_to_bytes(datatype.bucket.name)
         req.type = str_to_bytes(datatype.bucket.bucket_type.name)
 

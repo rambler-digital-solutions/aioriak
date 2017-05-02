@@ -1,3 +1,40 @@
+## 0.1.7 (2017-02-13)
+
+Fix:
+ 
+  - Sphinx Documentation
+
+## 0.1.6 (2017-02-10)
+
+Fix:
+ 
+  - PyPi information and README
+
+## 0.1.5 (2017-02-09)
+
+Add:
+
+  - Python 3.6 support
+  
+Update:
+
+  - riak requirement to 2.7.0
+
+Remove: 
+  
+  - python3-riak-pb requirement
+
+Fix:
+  - readthedocs doc building process
+
+## 0.1.4 (2017-02-03)
+
+Add:
+
+  - Initial MapReduce support
+  - initial Secondary Indexes 2i
+  - Add hostlist initial support
+
 ## 0.1.3 (2016-10-28)
 
 Update:

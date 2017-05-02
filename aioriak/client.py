@@ -1,9 +1,10 @@
 import logging
 import json
+import random
 from weakref import WeakValueDictionary
 from .transport import create_transport
 from .bucket import BucketType, Bucket
-from riak.resolver import default_resolver
+from aioriak.resolver import default_resolver
 from riak.util import bytes_to_str, str_to_bytes
 from aioriak.datatypes import TYPES
 
@@ -56,7 +57,10 @@ class RiakClient:
     or by using the methods on related objects.
     '''
     def __init__(self, host='localhost', port=8087, loop=None):
-        self._host = host
+        if isinstance(host, (list, tuple, set)):
+            self._host = random.choice(host)
+        else:
+            self._host = host
         self._port = port
         self._loop = loop
         self._bucket_types = WeakValueDictionary()
@@ -70,6 +74,10 @@ class RiakClient:
                           'text/json': binary_json_encoder,
                           'text/plain': str_to_bytes,
                           'binary/octet-stream': binary_encoder_decoder}
+        self._closed = False
+
+    def __del__(self):
+        self.close()
 
     def get_decoder(self, content_type):
         '''
@@ -126,10 +134,13 @@ class RiakClient:
 
     resolver = property(_get_resolver, _set_resolver,
                         doc='''The sibling-resolution function for this client.
-                        Defaults to :func:`riak.resolver.default_resolver`.''')
+                        Defaults to :func:`aioriak.resolver.default_resolver`.
+                        ''')
 
     def close(self):
-        self._transport.close()
+        if not self._closed:
+            self._closed = True
+            self._transport.close()
 
     async def _create_transport(self):
         self._transport = await create_transport(
@@ -153,7 +164,7 @@ class RiakClient:
             loop.run_until_complete(go())
 
         :param host: Hostname or ip address of Riak instance
-        :type host: str
+        :type host: str, list, tuple
         :param port: Port of riak instance
         :type port: int
         :param loop: asyncio event loop

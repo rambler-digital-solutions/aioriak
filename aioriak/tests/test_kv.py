@@ -2,7 +2,7 @@ from .base import IntegrationTest, AsyncUnitTestCase
 from aioriak.bucket import Bucket
 from aioriak.mapreduce import RiakMapReduce
 from aioriak.error import ConflictError
-from riak.resolver import default_resolver, last_written_resolver
+from aioriak.resolver import default_resolver, last_written_resolver
 import asyncio
 import json
 import pickle
@@ -504,7 +504,7 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
     def test_list_buckets(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            obj = await bucket.new("one", {"foo": "one", "bar": "red"})
+            obj = await bucket.new('one', {'foo': 'one', 'bar': 'red'})
             await obj.store()
             buckets = await self.client.get_buckets()
             self.assertTrue(self.bucket_name in [x.name for x in buckets])
@@ -513,7 +513,7 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
     def test_index_store_and_get(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index1_int', 10))
             obj.indexes.add(('index2_bin', 'string'))
             await obj.store()
@@ -527,15 +527,15 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
     def test_get_index_equal(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_bin', 'a'))
             await obj.store()
 
-            obj = await bucket.new('foo2', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo2', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_bin', 'b'))
             await obj.store()
 
-            obj = await bucket.new('foo3', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo3', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_bin', 'c'))
             await obj.store()
 
@@ -548,15 +548,15 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
     def test_get_index_range(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_int', 10))
             await obj.store()
 
-            obj = await bucket.new('foo2', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo2', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_int', 15))
             await obj.store()
 
-            obj = await bucket.new('foo3', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo3', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_int', 20))
             await obj.store()
 
@@ -570,28 +570,33 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
             for n in range(50):
-                obj = await bucket.new('foo{}'.format(n), {"foo": "one", "bar": "red"})
+                obj = await bucket.new('foo{}'.format(n),
+                                       {'foo': 'one', 'bar': 'red'})
                 obj.indexes.add(('index_int', n))
                 await obj.store()
 
-            result, continuation = await bucket.get_index('index_int', 0, 50, max_results=10)
+            result, continuation = await bucket.get_index(
+                'index_int', 0, 50, max_results=10)
             self.assertIsNotNone(continuation)
             self.assertEqual(result, ['foo{}'.format(n) for n in range(10)])
 
-            result, continuation = await bucket.get_index('index_int', 0, 50, max_results=10, continuation=continuation)
+            result, continuation = await bucket.get_index(
+                'index_int', 0, 50, max_results=10, continuation=continuation)
             self.assertIsNotNone(continuation)
-            self.assertEqual(result, ['foo{}'.format(n) for n in range(10, 20)])
+            self.assertEqual(result, ['foo{}'.format(n) for n in range(
+                10, 20)])
 
         self.loop.run_until_complete(go())
 
     def test_get_index_with_terms(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            obj = await bucket.new('foo', {"foo": "one", "bar": "red"})
+            obj = await bucket.new('foo', {'foo': 'one', 'bar': 'red'})
             obj.indexes.add(('index_int', 10))
             await obj.store()
 
-            result, _ = await bucket.get_index('index_int', 0, 50, return_terms=True)
+            result, _ = await bucket.get_index('index_int', 0, 50,
+                                               return_terms=True)
             self.assertEqual(result, [(10, 'foo')])
 
         self.loop.run_until_complete(go())
@@ -599,8 +604,10 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
     def test_map_reduce(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            await (await bucket.new('foo', {"foo": "one", "bar": "red"})).store()
-            await (await bucket.new('foo2', {"foo": "two", "bar": "green"})).store()
+            await (await bucket.new('foo',
+                                    {'foo': 'one', 'bar': 'red'})).store()
+            await (await bucket.new('foo2',
+                                    {'foo': 'two', 'bar': 'green'})).store()
 
             mr = RiakMapReduce(self.client)
             mr.add_bucket(self.bucket_name)
@@ -608,16 +615,18 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             mr.map(['riak_kv_mapreduce', 'map_object_value'])
 
             results = await mr.run()
-            self.assertIn(json.dumps({"foo": "one", "bar": "red"}), results)
-            self.assertIn(json.dumps({"foo": "two", "bar": "green"}), results)
+            self.assertIn(json.dumps({'foo': 'one', 'bar': 'red'}), results)
+            self.assertIn(json.dumps({'foo': 'two', 'bar': 'green'}), results)
 
         self.loop.run_until_complete(go())
 
     def test_stream_map_reduce(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
-            await (await bucket.new('foo', {"foo": "one", "bar": "red"})).store()
-            await (await bucket.new('foo2', {"foo": "two", "bar": "green"})).store()
+            await (await bucket.new('foo',
+                                    {'foo': 'one', 'bar': 'red'})).store()
+            await (await bucket.new('foo2',
+                                    {'foo': 'two', 'bar': 'green'})).store()
 
             mr = RiakMapReduce(self.client)
             mr.add_bucket(self.bucket_name)
@@ -630,7 +639,7 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
                 results.append(result)
 
             self.assertEqual(len(results), 2)
-            self.assertIn(json.dumps({"foo": "one", "bar": "red"}), results)
-            self.assertIn(json.dumps({"foo": "two", "bar": "green"}), results)
+            self.assertIn(json.dumps({'foo': 'one', 'bar': 'red'}), results)
+            self.assertIn(json.dumps({'foo': 'two', 'bar': 'green'}), results)
 
         self.loop.run_until_complete(go())

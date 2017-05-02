@@ -1,11 +1,26 @@
 from setuptools import setup, find_packages
+import codecs
+import os
 from commands import (docker_build, docker_start, docker_stop, setup_riak,
                       create_bucket_types, Test)
 
+
+HERE = os.path.abspath(os.path.dirname(__file__))
+
+
+def read(*parts):
+    """
+    Build an absolute path from *parts* and and return the contents of the
+    resulting file.  Assume UTF-8 encoding.
+    """
+    with codecs.open(os.path.join(HERE, *parts), "rb", "utf-8") as f:
+        return f.read()
+
 setup(
     name='aioriak',
-    version='0.1.3',
+    version='0.1.7',
     description='Async implementation of Riak DB python client',
+    long_description=read("README.rst"),
     author='Makc Belousov',
     author_email='m.belousov@rambler-co.ru',
     url='https://github.com/rambler-digital-solutions/aioriak',
@@ -15,8 +30,7 @@ setup(
     zip_safe=False,
     license='MIT',
     install_requires=[
-        'python3-riak-pb==2.1.0.6',
-        'riak==2.5.5',
+        'riak==2.7.0',
     ],
     tests_require=['nose==1.3.7',
                    'coverage==4.0.3'],
@@ -32,6 +46,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Database',

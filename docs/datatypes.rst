@@ -37,7 +37,7 @@ All Data Types must be stored in buckets bearing a
 the ``allow_mult`` property set to ``true``.
 
 These Data Types are stored just like :class:`RiakObjects
-<riak.riak_object.RiakObject>`, so size constraints that apply to
+<aioriak.riak_object.RiakObject>`, so size constraints that apply to
 normal Riak values apply to Riak Data Types too.
 
 An in-depth discussion of Data Types, also known as CRDTs,
