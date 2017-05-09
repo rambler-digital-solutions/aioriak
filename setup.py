@@ -18,7 +18,7 @@ def read(*parts):
 
 setup(
     name='aioriak',
-    version='0.1.7',
+    version='0.1.8',
     description='Async implementation of Riak DB python client',
     long_description=read("README.rst"),
     author='Makc Belousov',
