@@ -1,3 +1,9 @@
+## 0.1.8 (2017-05-09)
+
+Add:
+ 
+  - Quorum and timeout arguments into base operations.
+
 ## 0.1.7 (2017-02-13)
 
 Fix:
