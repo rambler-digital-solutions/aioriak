@@ -88,7 +88,8 @@ class RiakObject:
         await self.client.get(self)
         return self
 
-    async def store(self, return_body=True):
+    async def store(self, w=None, dw=None, pw=None, return_body=True,
+                    if_none_match=False, timeout=None):
         '''
         Store the object in Riak. When this operation completes, the
         object could contain new metadata and possibly new data if Riak
@@ -102,8 +103,9 @@ class RiakObject:
             raise ConflictError("Attempting to store an invalid object, "
                                 "resolve the siblings first")
 
-        await self.client.put(self, return_body)
-
+        await self.client.put(self, w=w, dw=dw, pw=pw,
+                              return_body=return_body,
+                              if_none_match=if_none_match, timeout=timeout)
         return self
 
     async def delete(self):

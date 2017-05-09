@@ -375,17 +375,32 @@ class RiakClient:
 
         return await self._transport.get(robj)
 
-    async def put(self, robj, return_body):
+    async def put(self, robj, w=None, dw=None, pw=None, return_body=None,
+                  if_none_match=None, timeout=None):
         '''
         Stores an object in the Riak cluster.
 
-        :param return_body: whether to return the resulting object
-            after the write
-        :type return_body: boolean
         :param robj: the object to store
         :type robj: RiakObject
+        :param w: the write quorum
+        :type w: integer, string, None
+        :param dw: the durable write quorum
+        :type dw: integer, string, None
+        :param pw: the primary write quorum
+        :type pw: integer, string, None
+        :param return_body: whether to return the resulting object
+           after the write
+        :type return_body: boolean
+        :param if_none_match: whether to fail the write if the object
+          exists
+        :type if_none_match: boolean
+        :param timeout: a timeout value in milliseconds
+        :type timeout: int
         '''
-        return await self._transport.put(robj, return_body=return_body)
+        return await self._transport.put(robj, w=w, dw=dw, pw=pw,
+                                         return_body=return_body,
+                                         if_none_match=if_none_match,
+                                         timeout=timeout)
 
     async def delete(self, robj):
         '''

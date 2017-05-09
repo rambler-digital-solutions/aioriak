@@ -19,6 +19,15 @@ MAX_CHUNK_SIZE = 65536
 logger = logging.getLogger('aioriak.transport')
 
 
+def _validate_timeout(timeout):
+    """
+    Raises an exception if the given timeout is an invalid value.
+    """
+    if not (timeout is None or
+            (type(timeout) == int and timeout > 0)):  # noqa
+        raise ValueError("timeout must be a positive integer")
+
+
 async def create_transport(host='localhost', port=8087, loop=None):
     reader, writer = await asyncio.open_connection(
         host, port, loop=loop)
@@ -870,13 +879,26 @@ class RiakPbcAsyncTransport:
 
         return (bucket, key, tag)
 
-    async def get(self, robj):
+    async def get(self, robj, r=None, pr=None, timeout=None, basic_quorum=None,
+                  notfound_ok=None):
         '''
         Serialize get request and deserialize response
         '''
         bucket = robj.bucket
 
         req = riak_kv_pb2.RpbGetReq()
+        if r:
+            req.r = self._encode_quorum(r)
+        if pr:
+            req.pr = self._encode_quorum(pr)
+        if basic_quorum is not None:
+            req.basic_quorum = basic_quorum
+        if notfound_ok is not None:
+            req.notfound_ok = notfound_ok
+        if timeout:
+            req.timeout = timeout
+        req.deletedvclock = True
+
         req.bucket = bucket.name.encode()
         self._add_bucket_type(req, bucket.bucket_type)
         req.key = robj.key.encode()
@@ -917,13 +939,24 @@ class RiakPbcAsyncTransport:
         else:
             return results, None
 
-    async def put(self, robj, return_body=True):
+    async def put(self, robj, w=None, dw=None, pw=None, return_body=True,
+                  if_none_match=False, timeout=None):
         bucket = robj.bucket
 
         req = riak_kv_pb2.RpbPutReq()
+        if w:
+            req.w = self._encode_quorum(w)
+        if dw:
+            req.dw = self._encode_quorum(dw)
+        if pw:
+            req.pw = self._encode_quorum(pw)
 
         if return_body:
             req.return_body = 1
+        if if_none_match:
+            req.if_none_match = 1
+        if timeout:
+            req.timeout = timeout
 
         req.bucket = str_to_bytes(bucket.name)
         self._add_bucket_type(req, bucket.bucket_type)
