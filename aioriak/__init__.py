@@ -1,8 +1,4 @@
-__version__ = '0.0.1'
-
-from .client import RiakClient
-from .riak_object import RiakObject
-from .mapreduce import RiakMapReduce
+from .cluster import Cluster, Node
 
 
-__all__ = ('RiakClient', 'RiakObject', 'RiakMapReduce')
+__all__ = ('Cluster', 'Node')
