@@ -1,9 +1,13 @@
 from setuptools import setup, find_packages
 import codecs
 import os
+from pip.req import parse_requirements
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
+
+test_reqs = parse_requirements('requirements-test.txt', session='pass')
+test_requirements = [str(ir.req) for ir in test_reqs]
 
 
 def read(*parts):
@@ -30,13 +34,7 @@ setup(
     license='MIT',
     install_requires=[],
     setup_requires=['pytest-runner'],
-    tests_require=[
-        'pytest-asyncio==0.5.0',
-        'pytest-cov==2.5.1',
-        'pytest-aiohttp==0.1.3',
-        'pytest-sugar==0.8.0',
-        'pytest==3.0.7',
-    ],
+    tests_require=test_requirements,
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
