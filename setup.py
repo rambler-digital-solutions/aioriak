@@ -31,12 +31,11 @@ setup(
     install_requires=[],
     setup_requires=['pytest-runner'],
     tests_require=[
-        'pytest',
-        'pytest-asyncio',
-        'pytest-cov',
-        'pytest-asyncio',
-        'pytest-aiohttp',
-        'pytest-sugar',
+        'pytest==3.0.7',
+        'pytest-asyncio==0.5.0',
+        'pytest-cov==2.5.1',
+        'pytest-aiohttp==0.1.3',
+        'pytest-sugar==0.8.0',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
