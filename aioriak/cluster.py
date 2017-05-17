@@ -1,3 +1,4 @@
+import asyncio
 from .pool import ConnectionPool
 
 
@@ -11,7 +12,9 @@ class Node:
 
 
 class Cluster:
-    def __init__(self, nodes=None):
+    def __init__(self, nodes=None, loop=None):
+        self._loop = loop or asyncio.get_event_loop()
+
         if not nodes:
             nodes = [Node()]
         elif not isinstance(nodes, (list, tuple, set)):
@@ -29,5 +32,9 @@ class Cluster:
 
         self._pool = ConnectionPool(self._nodes)
 
-    def connect(self):
-        return self._pool.acquire()
+    async def connect(self):
+        return await self._pool.acquire()
+
+    def __repr__(self):
+        return 'Cluster({})'.format(', '.join("('{}', {})".format(
+            node.host, node.port) for node in self._nodes))
