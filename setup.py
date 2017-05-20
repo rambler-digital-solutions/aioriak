@@ -2,6 +2,7 @@ from setuptools import setup, find_packages
 import codecs
 import os
 from pip.req import parse_requirements
+from commands import build_messages
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -35,6 +36,9 @@ setup(
     install_requires=[],
     setup_requires=['pytest-runner'],
     tests_require=test_requirements,
+    cmdclass={
+        'build_messages': build_messages,
+    },
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

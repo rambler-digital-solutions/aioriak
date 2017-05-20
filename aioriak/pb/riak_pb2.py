@@ -765,91 +765,91 @@ DESCRIPTOR.message_types_by_name['RpbAuthReq'] = _RPBAUTHREQ
 
 RpbErrorResp = _reflection.GeneratedProtocolMessageType('RpbErrorResp', (_message.Message,), dict(
   DESCRIPTOR = _RPBERRORRESP,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbErrorResp)
   ))
 _sym_db.RegisterMessage(RpbErrorResp)
 
 RpbGetServerInfoResp = _reflection.GeneratedProtocolMessageType('RpbGetServerInfoResp', (_message.Message,), dict(
   DESCRIPTOR = _RPBGETSERVERINFORESP,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbGetServerInfoResp)
   ))
 _sym_db.RegisterMessage(RpbGetServerInfoResp)
 
 RpbPair = _reflection.GeneratedProtocolMessageType('RpbPair', (_message.Message,), dict(
   DESCRIPTOR = _RPBPAIR,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbPair)
   ))
 _sym_db.RegisterMessage(RpbPair)
 
 RpbGetBucketReq = _reflection.GeneratedProtocolMessageType('RpbGetBucketReq', (_message.Message,), dict(
   DESCRIPTOR = _RPBGETBUCKETREQ,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbGetBucketReq)
   ))
 _sym_db.RegisterMessage(RpbGetBucketReq)
 
 RpbGetBucketResp = _reflection.GeneratedProtocolMessageType('RpbGetBucketResp', (_message.Message,), dict(
   DESCRIPTOR = _RPBGETBUCKETRESP,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbGetBucketResp)
   ))
 _sym_db.RegisterMessage(RpbGetBucketResp)
 
 RpbSetBucketReq = _reflection.GeneratedProtocolMessageType('RpbSetBucketReq', (_message.Message,), dict(
   DESCRIPTOR = _RPBSETBUCKETREQ,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbSetBucketReq)
   ))
 _sym_db.RegisterMessage(RpbSetBucketReq)
 
 RpbResetBucketReq = _reflection.GeneratedProtocolMessageType('RpbResetBucketReq', (_message.Message,), dict(
   DESCRIPTOR = _RPBRESETBUCKETREQ,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbResetBucketReq)
   ))
 _sym_db.RegisterMessage(RpbResetBucketReq)
 
 RpbGetBucketTypeReq = _reflection.GeneratedProtocolMessageType('RpbGetBucketTypeReq', (_message.Message,), dict(
   DESCRIPTOR = _RPBGETBUCKETTYPEREQ,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbGetBucketTypeReq)
   ))
 _sym_db.RegisterMessage(RpbGetBucketTypeReq)
 
 RpbSetBucketTypeReq = _reflection.GeneratedProtocolMessageType('RpbSetBucketTypeReq', (_message.Message,), dict(
   DESCRIPTOR = _RPBSETBUCKETTYPEREQ,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbSetBucketTypeReq)
   ))
 _sym_db.RegisterMessage(RpbSetBucketTypeReq)
 
 RpbModFun = _reflection.GeneratedProtocolMessageType('RpbModFun', (_message.Message,), dict(
   DESCRIPTOR = _RPBMODFUN,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbModFun)
   ))
 _sym_db.RegisterMessage(RpbModFun)
 
 RpbCommitHook = _reflection.GeneratedProtocolMessageType('RpbCommitHook', (_message.Message,), dict(
   DESCRIPTOR = _RPBCOMMITHOOK,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbCommitHook)
   ))
 _sym_db.RegisterMessage(RpbCommitHook)
 
 RpbBucketProps = _reflection.GeneratedProtocolMessageType('RpbBucketProps', (_message.Message,), dict(
   DESCRIPTOR = _RPBBUCKETPROPS,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbBucketProps)
   ))
 _sym_db.RegisterMessage(RpbBucketProps)
 
 RpbAuthReq = _reflection.GeneratedProtocolMessageType('RpbAuthReq', (_message.Message,), dict(
   DESCRIPTOR = _RPBAUTHREQ,
-  __module__ = 'riak_pb2'
+  __module__ = 'aioriak.pb.riak_pb2'
   # @@protoc_insertion_point(class_scope:RpbAuthReq)
   ))
 _sym_db.RegisterMessage(RpbAuthReq)
