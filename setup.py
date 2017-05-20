@@ -33,7 +33,9 @@ setup(
     include_package_data=True,
     zip_safe=False,
     license='MIT',
-    install_requires=[],
+    install_requires=[
+        'protobuf==3.3.0',
+    ],
     setup_requires=['pytest-runner'],
     tests_require=test_requirements,
     cmdclass={
