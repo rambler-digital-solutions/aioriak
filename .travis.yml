@@ -1,5 +1,5 @@
 language: python
-# dist: trusty  # have no preinstalled riak service
+group: travis_lts
 sudo: false
 
 services:
