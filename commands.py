@@ -57,9 +57,9 @@ def check_output(*popenargs, **kwargs):
     return output
 
 
-def get_node_ip(node='riak01'):
+def get_node_ip(node='aioriak_coordinator_1'):
     state = json.loads(check_output(['docker', 'inspect', node]).decode())
-    return state[0]['NetworkSettings']['IPAddress']
+    return state[0]['NetworkSettings']['IPAddress'] or 'localhost'
 
 
 class docker(object):
@@ -75,8 +75,8 @@ class docker(object):
         else:
             return True
 
-    def cluster_is_started(self, node='riak01'):
-        return node in check_output(['docker', 'ps']).decode()
+    def cluster_is_started(self, node='aioriak_coordinator'):
+        return node in check_output(['docker', 'ps']).decode('utf-8')
 
 
 class docker_build(Command, docker):
@@ -106,15 +106,12 @@ class docker_start(Command, docker):
 
     def initialize_options(self):
         self.verbose = bool(int(os.environ.get('VERBOSE', 0)))
-        os.environ['DOCKER_RIAK_AUTOMATIC_CLUSTERING'] = '1'
-        os.environ['DOCKER_RIAK_CLUSTER_SIZE'] = '3'
-        os.environ['DOCKER_RIAK_BACKEND'] = 'memory'
 
     def finalize_options(self):
         pass
 
     def run(self):
-        args = ['make', '-C', self.docker_submodule_path, 'start-cluster']
+        args = ['docker-compose', 'up', '-d', 'coordinator']
         retcode = call(args)
         if self._check_retcode(retcode, args):
             time.sleep(3)
@@ -133,7 +130,7 @@ class docker_stop(Command, docker):
 
     def run(self):
         if self.use_docker() and self.cluster_is_started():
-            args = ['make', '-C', self.docker_submodule_path, 'stop-cluster']
+            args = ['docker-compose', 'down']
             retcode = call(args)
             self._check_retcode(retcode, args)
 
@@ -232,8 +229,8 @@ class setup_riak(Command, docker):
         if self.riak_admin is None and not self.use_docker():
             raise DistutilsOptionError("riak-admin option not set")
         if self.use_docker():
-            self.riak_admin = ['docker', 'exec', '-i', '-t', 'riak01',
-                               'riak-admin']
+            self.riak_admin = ['docker', 'exec', '-i', '-t',
+                               'aioriak_coordinator_1', 'riak-admin']
         else:
             self.riak_admin = self.riak_admin.split()
 
@@ -245,7 +242,6 @@ class setup_riak(Command, docker):
             self.run_command(cmd_name)
 
     sub_commands = [
-        ('docker_build', lambda self: self.use_docker()),
         ('docker_start',
          lambda self: self.use_docker() and not self.cluster_is_started()),
         ('create_bucket_types', None)]
