@@ -14,6 +14,10 @@
     :target: https://badge.fury.io/py/aioriak 
     :alt: PyPI version 
 
+.. image:: https://pyup.io/repos/github/rambler-digital-solutions/aioriak/shield.svg
+     :target: https://pyup.io/repos/github/rambler-digital-solutions/aioriak/
+     :alt: Updates
+
 
 Asyncio (:pep:`3156`) Riak client library.
 This project is based on official Basho python client library
@@ -53,7 +57,7 @@ Requirements
 ------------
 
 - Python >= 3.5
-- riak>=2.1.3
+- riak>=2.7.0
 
 Using exampe
 ------------

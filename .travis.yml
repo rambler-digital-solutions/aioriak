@@ -1,5 +1,5 @@
 language: python
-# dist: trusty  # have no preinstalled riak service
+group: travis_lts
 sudo: false
 
 services:
@@ -12,10 +12,8 @@ before_install:
   - python setup.py setup_riak
 
 python:
-  - '3.5.0'
-  - '3.5.1'
-  - '3.5.2'
-  - '3.6.0'
+  - '3.5.4'
+  - '3.6.4'
 
 install:
   - pip install .

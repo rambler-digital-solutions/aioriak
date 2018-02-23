@@ -16,9 +16,16 @@ def read(*parts):
     with codecs.open(os.path.join(HERE, *parts), "rb", "utf-8") as f:
         return f.read()
 
+
+def req_file(filename):
+    with open(filename) as f:
+        content = f.readlines()
+    return [x.strip() for x in content]
+
+
 setup(
     name='aioriak',
-    version='0.1.7',
+    version='0.1.8',
     description='Async implementation of Riak DB python client',
     long_description=read("README.rst"),
     author='Makc Belousov',
@@ -29,11 +36,11 @@ setup(
     include_package_data=True,
     zip_safe=False,
     license='MIT',
-    install_requires=[
-        'riak==2.7.0',
-    ],
-    tests_require=['nose==1.3.7',
-                   'coverage==4.0.3'],
+    install_requires=req_file('requirements.txt'),
+    tests_require=req_file('requirements-tests.txt'),
+    extras_require={
+        'dev': req_file('requirements-dev.txt'),
+    },
     cmdclass={
         'test': Test,
         'docker_build': docker_build,

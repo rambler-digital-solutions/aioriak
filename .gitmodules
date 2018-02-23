@@ -1,3 +1,3 @@
-[submodule "aioriak/tests/docker"]
-	path = aioriak/tests/docker
-	url = https://github.com/singulared/docker-riak.git
+[submodule "riak_pb"]
+	path = riak_pb
+	url = git@github.com:basho/riak_pb.git

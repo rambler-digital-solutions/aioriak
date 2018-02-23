@@ -266,12 +266,11 @@ class RiakClient:
         if not isinstance(name, str):
             raise TypeError('Bucket name must be a string')
 
-        if name in self._bucket_types:
-            return self._bucket_types[name]
-        else:
+        btype = self._bucket_types.get(name)
+        if not btype:
             btype = BucketType(self, name)
             self._bucket_types[name] = btype
-            return btype
+        return btype
 
     def bucket(self, name, bucket_type='default'):
         '''
@@ -302,8 +301,11 @@ class RiakClient:
             raise TypeError('bucket_type must be a string '
                             'or aioriak.bucket.BucketType')
 
-        return self._buckets.setdefault((bucket_type, name),
-                                        Bucket(self, name, bucket_type))
+        bucket = self._buckets.get((bucket_type, name))
+        if not bucket:
+            bucket = Bucket(self, name, bucket_type)
+            self._buckets[(bucket_type, name)] = bucket
+        return bucket
 
     async def get_bucket_type_props(self, bucket_type):
         '''
@@ -373,17 +375,32 @@ class RiakClient:
 
         return await self._transport.get(robj)
 
-    async def put(self, robj, return_body):
+    async def put(self, robj, w=None, dw=None, pw=None, return_body=None,
+                  if_none_match=None, timeout=None):
         '''
         Stores an object in the Riak cluster.
 
-        :param return_body: whether to return the resulting object
-            after the write
-        :type return_body: boolean
         :param robj: the object to store
         :type robj: RiakObject
+        :param w: the write quorum
+        :type w: integer, string, None
+        :param dw: the durable write quorum
+        :type dw: integer, string, None
+        :param pw: the primary write quorum
+        :type pw: integer, string, None
+        :param return_body: whether to return the resulting object
+           after the write
+        :type return_body: boolean
+        :param if_none_match: whether to fail the write if the object
+          exists
+        :type if_none_match: boolean
+        :param timeout: a timeout value in milliseconds
+        :type timeout: int
         '''
-        return await self._transport.put(robj, return_body=return_body)
+        return await self._transport.put(robj, w=w, dw=dw, pw=pw,
+                                         return_body=return_body,
+                                         if_none_match=if_none_match,
+                                         timeout=timeout)
 
     async def delete(self, robj):
         '''
