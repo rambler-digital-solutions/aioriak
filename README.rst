@@ -39,7 +39,7 @@ Security                            No
 Riak Search                         WIP
 MapReduce                           WIP
 Tested python versions              `3.5, 3.6 <travis_>`__
-Tested Riak versions                `2.1.3, 2.1.4 <travis_>`__
+Tested Riak versions                `2.1.4, 2.2.3 <travis_>`__
 ================================  ==============================
 
 Documentation
