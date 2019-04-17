@@ -104,7 +104,12 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             main_obj.links.append(link_entry)
             await main_obj.store()
             fetched_main_obj = await bucket.get('main')
-            self.assertEqual(fetched_main_obj.links, [link_entry])
+            expected_entry = (
+                bucket.name.encode('ascii'),
+                sub_obj.key.encode('ascii'),
+                b''  # Tag should default to an empty bytestring
+            )
+            self.assertEqual(fetched_main_obj.links, [expected_entry])
         self.loop.run_until_complete(go())
 
     def test_store_object_with_unicode(self):

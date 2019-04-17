@@ -246,7 +246,7 @@ class RiakPbcAsyncTransport:
             if tag:
                 pb_link.tag = tag
             else:
-                pb_link.tag = ''
+                pb_link.tag = b''
 
         for field, value in robj.indexes:
             if isinstance(value, int):
