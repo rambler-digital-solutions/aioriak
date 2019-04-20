@@ -2,6 +2,7 @@ import logging
 import asyncio
 import struct
 import json
+import warnings
 from riak.pb import riak_pb2
 from riak.pb import riak_dt_pb2
 from riak.pb import riak_kv_pb2
@@ -26,6 +27,22 @@ def _validate_timeout(timeout):
     if not (timeout is None or
             (type(timeout) == int and timeout > 0)):  # noqa
         raise ValueError("timeout must be a positive integer")
+
+
+def _encode_link_field(value):
+    """
+    Encode the field of a `RiakObject.links` entry as bytes if necessary.
+    """
+    if isinstance(value, bytes):
+        warnings.warn(
+            "Passing `RiakObject.links` fields as bytes is deprecated "
+            "and may be removed in a future release. Pass the fields as "
+            "strings instead.",
+            category=DeprecationWarning
+        )
+        return value
+
+    return value.encode()
 
 
 async def create_transport(host='localhost', port=8087, loop=None):
@@ -241,10 +258,10 @@ class RiakPbcAsyncTransport:
             except ValueError:
                 raise RiakError("Invalid link tuple %s" % link)
 
-            pb_link.bucket = bucket
-            pb_link.key = key
+            pb_link.bucket = _encode_link_field(bucket)
+            pb_link.key = _encode_link_field(key)
             if tag:
-                pb_link.tag = tag
+                pb_link.tag = _encode_link_field(tag)
             else:
                 pb_link.tag = b''
 
@@ -865,15 +882,15 @@ class RiakPbcAsyncTransport:
         '''
 
         if link.HasField("bucket"):
-            bucket = link.bucket
+            bucket = link.bucket.decode()
         else:
             bucket = None
         if link.HasField("key"):
-            key = link.key
+            key = link.key.decode()
         else:
             key = None
         if link.HasField("tag"):
-            tag = link.tag
+            tag = link.tag.decode()
         else:
             tag = None
 
