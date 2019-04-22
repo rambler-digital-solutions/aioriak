@@ -1,3 +1,8 @@
+## 0.2.0 (2019-04-22)
+
+Deprecated:
+  - Using bytes in link initialization PR #73
+
 ## 0.1.8 (2017-05-09)
 
 Add:
