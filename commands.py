@@ -114,7 +114,7 @@ class docker_start(Command, docker):
         args = ['docker-compose', 'up', '-d', 'coordinator']
         retcode = call(args)
         if self._check_retcode(retcode, args):
-            time.sleep(3)
+            time.sleep(10)
 
 
 class docker_stop(Command, docker):

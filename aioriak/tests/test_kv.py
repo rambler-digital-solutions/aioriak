@@ -69,6 +69,58 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
             self.assertEqual(obj2.data, rand)
         self.loop.run_until_complete(go())
 
+    def test_store_with_links_with_explicit_tag(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            rand = self.randint()
+            sub_obj = await bucket.new('sub', rand)
+            await sub_obj.store()
+
+            main_obj = await bucket.new('main', rand)
+            link_entry = (bucket.name, sub_obj.key, 'foobarbaz')
+            main_obj.links.append(link_entry)
+            await main_obj.store()
+            fetched_main_obj = await bucket.get('main')
+            self.assertEqual(fetched_main_obj.links, [link_entry])
+        self.loop.run_until_complete(go())
+
+    def test_store_with_links_with_byte_fields(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            rand = self.randint()
+            sub_obj = await bucket.new('sub', rand)
+            await sub_obj.store()
+
+            main_obj = await bucket.new('main', rand)
+            link_entry = (
+                bucket.name.encode(),
+                sub_obj.key.encode(),
+                b'foobarbaz'
+            )
+            main_obj.links.append(link_entry)
+            with self.assertWarns(DeprecationWarning):
+                await main_obj.store()
+            fetched_main_obj = await bucket.get('main')
+            expected_entry = (bucket.name, sub_obj.key, 'foobarbaz')
+            self.assertEqual(fetched_main_obj.links, [expected_entry])
+        self.loop.run_until_complete(go())
+
+    def test_store_with_links_without_tag(self):
+        async def go():
+            bucket = self.client.bucket(self.bucket_name)
+            rand = self.randint()
+            sub_obj = await bucket.new('sub', rand)
+            await sub_obj.store()
+
+            main_obj = await bucket.new('main', rand)
+            link_entry = (bucket.name, sub_obj.key, None)
+            main_obj.links.append(link_entry)
+            await main_obj.store()
+            fetched_main_obj = await bucket.get('main')
+            expected_entry = (bucket.name, sub_obj.key, '')
+            self.assertEqual(fetched_main_obj.links, [expected_entry])
+        self.loop.run_until_complete(go())
+
     def test_store_object_with_unicode(self):
         async def go():
             bucket = self.client.bucket(self.bucket_name)
