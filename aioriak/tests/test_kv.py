@@ -4,9 +4,10 @@ from aioriak.mapreduce import RiakMapReduce
 from aioriak.error import ConflictError
 from aioriak.resolver import default_resolver, last_written_resolver
 import asyncio
+import copy
 import json
 import pickle
-import copy
+import riak
 
 
 testrun_props_bucket = 'propsbucket'
@@ -662,7 +663,11 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
                                     {'foo': 'two', 'bar': 'green'})).store()
 
             mr = RiakMapReduce(self.client)
-            mr.add_bucket(self.bucket_name)
+            try:
+                riak.disable_list_exceptions = True
+                mr.add_bucket(self.bucket_name)
+            finally:
+                riak.disable_list_exceptions = False
 
             mr.map(['riak_kv_mapreduce', 'map_object_value'])
 
@@ -681,7 +686,12 @@ class BasicKVTests(IntegrationTest, AsyncUnitTestCase):
                                     {'foo': 'two', 'bar': 'green'})).store()
 
             mr = RiakMapReduce(self.client)
-            mr.add_bucket(self.bucket_name)
+
+            try:
+                riak.disable_list_exceptions = True
+                mr.add_bucket(self.bucket_name)
+            finally:
+                riak.disable_list_exceptions = False
 
             mr.map(['riak_kv_mapreduce', 'map_object_value'])
 
