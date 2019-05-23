@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import zlib
-from collections.abc import Mapping
 try:
     from contextlib import asynccontextmanager
 except ImportError as err:  # pragma: no cover - unreachable on 3.7
