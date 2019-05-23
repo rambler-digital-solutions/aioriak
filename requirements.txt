@@ -1,1 +1,2 @@
-riak==2.7.0
+riak==2.7.0;python_version<'3.7'
+riak @ https://github.com/basho/riak-python-client/archive/master.zip;python_version>='3.7'
