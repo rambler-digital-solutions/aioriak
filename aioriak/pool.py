@@ -28,14 +28,13 @@ class ConnectionPool:
         '''
         Set up the connection pool.
 
-        Arguments:
-        :param max_connections: The maximum amount of connections to keep 
-            internally at any time. If this amount of connections is reached
-            and the attempt to acquire a connection is made, the caller will
-            be blocked until a connection from the pool becomes available.
+        :param max_connections: The maximum amount of connections to keep \
+        internally at any time. If this amount of connections is reached \
+        and the attempt to acquire a connection is made, the caller will \
+        be blocked until a connection from the pool becomes available.
         :type max_connections: int
 
-        Any further connection parameters are passed to riak clients when
+        Any further keyword arguments are passed to riak clients when
         a new pool connection is to be established.
         '''
         self.total_connections = 0

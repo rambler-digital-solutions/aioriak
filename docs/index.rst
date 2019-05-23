@@ -20,12 +20,12 @@ Riak BucketTypes                    Yes
 Custom resolver                     Yes
 Node list support                   WIP
 Custom quorum                       No
-Connections Pool                    No
+Connections Pool                    Yes
 Operations timout                   No
 Security                            No
 Riak Search                         WIP
 MapReduce                           WIP
-Tested python versions              `3.5, 3.6 <travis_>`__
+Tested python versions              `3.5, 3.6, 3.7 <travis_>`__
 Tested Riak versions                `2.1.3, 2.1.4 <travis_>`__
 ================================  ==============================
 
@@ -65,6 +65,7 @@ Contents
     :maxdepth: 4
     
     client
+    pool
     bucket
     object
     datatypes
