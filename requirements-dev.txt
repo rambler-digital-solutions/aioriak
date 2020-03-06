@@ -1,4 +1,4 @@
-Sphinx==2.4.3
+Sphinx==2.4.4
 sphinx-autobuild==0.7.1
 sphinx-rtd-theme==0.4.3
 sphinxcontrib-asyncio==0.2.0
