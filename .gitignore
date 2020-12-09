@@ -488,3 +488,4 @@ tramp
 # Created by .ignore support plugin (hsz.mobi)
 #
 .mypy_cache/
+.python-version
