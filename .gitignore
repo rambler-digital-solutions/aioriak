@@ -486,3 +486,5 @@ tramp
 .cask/
 
 # Created by .ignore support plugin (hsz.mobi)
+#
+.mypy_cache/
