@@ -1,1 +1,2 @@
 include commands.py
+include requirements*
