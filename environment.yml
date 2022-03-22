@@ -6,4 +6,4 @@ dependencies:
     - sphinx-autobuild==0.6.0
     - sphinx-rtd-theme==0.1.9
     - sphinxcontrib-asyncio==0.2.0
-    - riak==2.7.0
+    - riak==3.0.0.ppl

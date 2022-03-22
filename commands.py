@@ -57,7 +57,7 @@ def check_output(*popenargs, **kwargs):
     return output
 
 
-def get_node_ip(node='aioriak_coordinator_1'):
+def get_node_ip(node='aioriak-coordinator-1'):
     state = json.loads(check_output(['docker', 'inspect', node]).decode())
     return state[0]['NetworkSettings']['IPAddress'] or 'localhost'
 
@@ -230,7 +230,7 @@ class setup_riak(Command, docker):
             raise DistutilsOptionError("riak-admin option not set")
         if self.use_docker():
             self.riak_admin = ['docker', 'exec', '-i', '-t',
-                               'aioriak_coordinator_1', 'riak-admin']
+                               'aioriak-coordinator-1', 'riak-admin']
         else:
             self.riak_admin = self.riak_admin.split()
 
