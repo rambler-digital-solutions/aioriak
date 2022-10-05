@@ -47,7 +47,7 @@ def _encode_link_field(value):
 
 async def create_transport(host='localhost', port=8087, loop=None):
     reader, writer = await asyncio.open_connection(
-        host, port, loop=loop)
+        host, port)
     conn = RiakPbcAsyncTransport(reader, writer, loop=loop)
     return conn
 
