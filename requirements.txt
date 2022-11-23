@@ -1,1 +1,1 @@
-riak==2.7.0
+riak @ git+https://github.com/StreetHawkInc/riak-python-client.git@master

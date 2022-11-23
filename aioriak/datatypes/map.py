@@ -1,6 +1,6 @@
 from .datatype import Datatype
 from . import TYPES
-from collections import Mapping
+from collections.abc import Mapping
 from riak.util import lazy_property
 
 

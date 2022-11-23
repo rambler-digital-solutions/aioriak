@@ -1,4 +1,4 @@
-from collections import Sized
+from collections.abc import Sized
 from aioriak.datatypes.datatype import Datatype
 from aioriak.datatypes import TYPES
 
